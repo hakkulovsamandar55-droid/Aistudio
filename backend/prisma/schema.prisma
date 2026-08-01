@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum GenerationType {
+  IMAGE
+  VIDEO
+}
+
+enum GenerationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum CreditTransactionType {
+  PURCHASE
+  GENERATION_IMAGE
+  GENERATION_VIDEO
+  SIGNUP_BONUS
+  REFUND
+}
+
+model User {
+  id               String   @id @default(uuid())
+  email            String   @unique
+  password         String
+  name             String
+  credits          Int      @default(10)
+  stripeCustomerId String?  @map("stripe_customer_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  generations        Generation[]
+  creditTransactions CreditTransaction[]
+
+  @@map("users")
+}
+
+model Generation {
+  id             String            @id @default(uuid())
+  userId         String            @map("user_id")
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           GenerationType
+  userPrompt     String            @map("user_prompt")
+  enhancedPrompt String?           @map("enhanced_prompt")
+  status         GenerationStatus  @default(PENDING)
+  resultUrl      String?           @map("result_url")
+  creditsUsed    Int               @default(0) @map("credits_used")
+  provider       String
+  errorMessage   String?           @map("error_message")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("generations")
+}
+
+model CreditTransaction {
+  id              String                @id @default(uuid())
+  userId          String                @map("user_id")
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount          Int
+  type            CreditTransactionType
+  description     String
+  stripePaymentId String?               @map("stripe_payment_id")
+  createdAt       DateTime              @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("credit_transactions")
+}
+
+model CreditPackage {
+  id            String   @id @default(uuid())
+  name          String
+  credits       Int
+  priceUsd      Float    @map("price_usd")
+  stripePriceId String   @unique @map("stripe_price_id")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("credit_packages")
+}
