@@ -38,7 +38,8 @@ Node.js + Express API for AI Studio. Handles auth, credits, the AI gateway
    ```
 
 4. Seed the credit packages (Starter/Pro/Business) so `/api/payments/packages`
-   returns data:
+   returns data. Optionally set `ADMIN_EMAIL`/`ADMIN_PASSWORD` in `.env`
+   first to also seed an initial admin account:
 
    ```bash
    npx prisma db seed
@@ -76,6 +77,18 @@ stripe listen --forward-to localhost:4000/api/webhooks/stripe
 ```
 
 Copy the printed webhook signing secret into `STRIPE_WEBHOOK_SECRET`.
+
+## Admin panel
+
+Every route under `/api/admin/*` requires a user whose `role` is `ADMIN`
+(checked fresh against the DB on every request, not just baked into the
+JWT). Endpoints: `GET /stats`, `GET /users`, `GET /users/:id`,
+`POST /users/:id/credits` (manual grant/deduct), `PATCH /users/:id/active`
+(ban/unban), `PATCH /users/:id/role`, `GET /generations` (all users),
+and `GET|POST|PATCH /packages`. The matching UI lives at `/admin` on the
+frontend and only renders its nav link for admins — promote a user to
+admin either via the seed script's `ADMIN_EMAIL`/`ADMIN_PASSWORD`, or by
+having an existing admin call `PATCH /api/admin/users/:id/role`.
 
 ## Project structure
 

@@ -10,6 +10,7 @@ const NAV_ITEMS = [
 export default function Layout({ children }) {
   const { user, credits, logout } = useAuth();
   const navigate = useNavigate();
+  const isAdmin = user?.role === 'ADMIN';
 
   const handleLogout = () => {
     logout();
@@ -34,6 +35,14 @@ export default function Layout({ children }) {
                 {item.icon} {item.label}
               </Link>
             ))}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50"
+              >
+                🛠️ Admin panel
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center gap-3">

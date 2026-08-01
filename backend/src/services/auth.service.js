@@ -25,6 +25,7 @@ function toPublicUser(user) {
     email: user.email,
     name: user.name,
     credits: user.credits,
+    role: user.role,
     createdAt: user.createdAt,
   };
 }
@@ -75,6 +76,10 @@ async function loginUser(email, password) {
   const passwordMatches = await bcrypt.compare(password, user.password);
   if (!passwordMatches) {
     throw new AppError('Invalid email or password', 401);
+  }
+
+  if (!user.isActive) {
+    throw new AppError('This account has been suspended', 403);
   }
 
   return {

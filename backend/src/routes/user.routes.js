@@ -7,6 +7,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 router.get('/me', userController.getMe);
+router.patch('/me', userController.updateMe);
 router.get('/me/credits/history', userController.getCreditsHistory);
 router.get('/me/generations', userController.getGenerations);
 

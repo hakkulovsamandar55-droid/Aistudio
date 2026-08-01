@@ -25,6 +25,12 @@ enum CreditTransactionType {
   GENERATION_VIDEO
   SIGNUP_BONUS
   REFUND
+  ADMIN_ADJUSTMENT
+}
+
+enum Role {
+  USER
+  ADMIN
 }
 
 model User {
@@ -33,6 +39,8 @@ model User {
   password         String
   name             String
   credits          Int      @default(10)
+  role             Role     @default(USER)
+  isActive         Boolean  @default(true) @map("is_active")
   stripeCustomerId String?  @map("stripe_customer_id")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")

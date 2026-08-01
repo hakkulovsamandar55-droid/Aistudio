@@ -17,6 +17,20 @@ const getMe = asyncHandler(async (req, res) => {
   res.json({ success: true, data: authService.toPublicUser(user) });
 });
 
+const updateMe = asyncHandler(async (req, res) => {
+  const { name } = req.body;
+  if (!name || !name.trim()) {
+    throw new AppError('Name is required', 400);
+  }
+
+  const user = await prisma.user.update({
+    where: { id: req.user.id },
+    data: { name: name.trim() },
+  });
+
+  res.json({ success: true, data: authService.toPublicUser(user) });
+});
+
 const getCreditsHistory = asyncHandler(async (req, res) => {
   const { page, limit, skip } = parsePagination(req.query);
 
@@ -63,4 +77,4 @@ const getGenerations = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { getMe, getCreditsHistory, getGenerations };
+module.exports = { getMe, updateMe, getCreditsHistory, getGenerations };

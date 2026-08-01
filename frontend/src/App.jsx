@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -12,6 +13,10 @@ import Billing from './pages/Billing';
 import BillingSuccess from './pages/BillingSuccess';
 import BillingCancel from './pages/BillingCancel';
 import History from './pages/History';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminGenerations from './pages/admin/AdminGenerations';
+import AdminPackages from './pages/admin/AdminPackages';
 
 function App() {
   return (
@@ -61,6 +66,38 @@ function App() {
               <ProtectedRoute>
                 <History />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminRoute>
+                <AdminUsers />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/generations"
+            element={
+              <AdminRoute>
+                <AdminGenerations />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/packages"
+            element={
+              <AdminRoute>
+                <AdminPackages />
+              </AdminRoute>
             }
           />
         </Routes>
