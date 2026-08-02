@@ -1,6 +1,7 @@
 const prisma = require('../config/db');
 const { CREDIT_COSTS } = require('../config/credits.config');
 const { applyStyle } = require('../config/styles.config');
+const { resolveTier } = require('./ai-gateway/videoTiers');
 const creditService = require('./credit.service');
 const promptEnhancer = require('./promptEnhancer.service');
 const { imageGateway, videoGateway } = require('./ai-gateway');
@@ -64,7 +65,10 @@ async function createImageGeneration(userId, userPrompt, options = {}) {
 }
 
 async function createVideoGeneration(userId, userPrompt, options = {}) {
-  const requiredCredits = CREDIT_COSTS.VIDEO;
+  // Video is priced per quality tier, so the charge follows the tier the
+  // caller asked for rather than a single fixed video price.
+  const tier = resolveTier(options.quality);
+  const requiredCredits = tier.credits;
   await creditService.checkSufficientCredits(userId, requiredCredits);
 
   const generation = await prisma.generation.create({
@@ -74,7 +78,9 @@ async function createVideoGeneration(userId, userPrompt, options = {}) {
       userPrompt,
       style: options.style || null,
       status: 'PROCESSING',
-      provider: process.env.VIDEO_PROVIDER || 'mock',
+      // The tier names the intended provider; the gateway records the one
+      // that actually served the request once it completes.
+      provider: tier.provider,
     },
   });
 
@@ -84,7 +90,10 @@ async function createVideoGeneration(userId, userPrompt, options = {}) {
   // (Bull/BullMQ + Redis) — the function signatures already match what that
   // migration would need: a self-contained async unit of work keyed by
   // generation.id, with no return value the caller depends on.
-  processVideoGeneration(generation.id, userId, userPrompt, requiredCredits, options).catch((err) => {
+  processVideoGeneration(generation.id, userId, userPrompt, requiredCredits, {
+    ...options,
+    quality: tier.id,
+  }).catch((err) => {
     logger.error(`Unhandled error processing video generation ${generation.id}`, err);
   });
 

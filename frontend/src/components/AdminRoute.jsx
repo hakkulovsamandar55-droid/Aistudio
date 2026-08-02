@@ -6,7 +6,7 @@ export default function AdminRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-gray-500">
+      <div className="flex min-h-screen items-center justify-center text-zinc-500">
         Yuklanmoqda...
       </div>
     );

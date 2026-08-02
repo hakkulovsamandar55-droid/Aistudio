@@ -37,12 +37,12 @@ export default function AnnouncementBanner() {
       {items.map((item) => (
         <div
           key={item.id}
-          className="flex items-start justify-between gap-3 rounded-xl bg-indigo-50 px-4 py-3 text-sm text-indigo-900"
+          className="flex items-start justify-between gap-3 rounded-xl bg-violet-500/15 px-4 py-3 text-sm text-indigo-900"
         >
           <span>📢 {item.message}</span>
           <button
             onClick={() => dismiss(item.id)}
-            className="shrink-0 text-indigo-400 hover:text-indigo-700"
+            className="shrink-0 text-indigo-400 hover:text-violet-300"
             aria-label="Yopish"
           >
             ✕

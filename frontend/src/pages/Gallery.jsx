@@ -43,23 +43,23 @@ export default function Gallery() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="border-b border-gray-200 bg-white">
+    <div className="min-h-screen bg-[#08080c]">
+      <header className="border-b border-white/8 bg-[#101018]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Link to="/" className="text-lg font-bold text-gray-900">
+          <Link to="/" className="text-lg font-bold text-white">
             AI Studio
           </Link>
           <div className="flex gap-2">
             <Link
               to={isAuthenticated ? '/dashboard' : '/login'}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 hover:bg-white/5"
             >
               {isAuthenticated ? 'Dashboard' : 'Kirish'}
             </Link>
             {!isAuthenticated && (
               <Link
                 to="/register"
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500"
               >
                 Boshlash
               </Link>
@@ -69,8 +69,8 @@ export default function Gallery() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8">
-        <h1 className="text-2xl font-bold text-gray-900">Galereya</h1>
-        <p className="mt-1 text-gray-500">Foydalanuvchilar yaratgan va ulashgan ishlar.</p>
+        <h1 className="text-2xl font-bold text-white">Galereya</h1>
+        <p className="mt-1 text-zinc-500">Foydalanuvchilar yaratgan va ulashgan ishlar.</p>
 
         <div className="mt-4 flex gap-2">
           {FILTERS.map((f) => (
@@ -78,7 +78,7 @@ export default function Gallery() {
               key={f.label}
               onClick={() => setType(f.value)}
               className={`rounded-full px-4 py-1.5 text-sm font-medium ${
-                type === f.value ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 shadow'
+                type === f.value ? 'bg-violet-600 text-white' : 'bg-[#101018] text-zinc-400 shadow'
               }`}
             >
               {f.label}
@@ -86,12 +86,12 @@ export default function Gallery() {
           ))}
         </div>
 
-        {loading && items.length === 0 && <p className="mt-8 text-gray-500">Yuklanmoqda...</p>}
+        {loading && items.length === 0 && <p className="mt-8 text-zinc-500">Yuklanmoqda...</p>}
 
         {!loading && items.length === 0 && (
-          <div className="mt-8 rounded-xl bg-white p-10 text-center shadow">
-            <p className="text-gray-500">Galereya hozircha bo'sh.</p>
-            <p className="mt-1 text-sm text-gray-400">
+          <div className="mt-8 rounded-xl bg-[#101018] p-10 text-center shadow">
+            <p className="text-zinc-500">Galereya hozircha bo'sh.</p>
+            <p className="mt-1 text-sm text-zinc-600">
               O'z ishingizni birinchi bo'lib ulashing — tarix sahifasidan "Galereyaga joylash" tugmasini bosing.
             </p>
           </div>
@@ -102,9 +102,9 @@ export default function Gallery() {
             <button
               key={item.id}
               onClick={() => setSelected(item)}
-              className="overflow-hidden rounded-xl bg-white text-left shadow transition hover:shadow-lg"
+              className="overflow-hidden rounded-xl bg-[#101018] text-left shadow transition hover:shadow-lg"
             >
-              <div className="flex aspect-square items-center justify-center bg-gray-100">
+              <div className="flex aspect-square items-center justify-center bg-white/5">
                 {item.type === 'IMAGE' ? (
                   <img src={item.resultUrl} alt={item.userPrompt} className="h-full w-full object-cover" />
                 ) : (
@@ -112,8 +112,8 @@ export default function Gallery() {
                 )}
               </div>
               <div className="p-3">
-                <p className="truncate text-sm text-gray-800">{item.userPrompt}</p>
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="truncate text-sm text-zinc-200">{item.userPrompt}</p>
+                <p className="mt-1 text-xs text-zinc-600">
                   {item.user?.name} · {item.type === 'IMAGE' ? '🖼️' : '🎬'}
                 </p>
               </div>
@@ -125,7 +125,7 @@ export default function Gallery() {
           <div className="mt-6 text-center">
             <button
               onClick={loadMore}
-              className="rounded-lg border border-gray-300 px-6 py-2.5 font-medium text-gray-700 hover:bg-gray-50"
+              className="rounded-lg border border-white/10 px-6 py-2.5 font-medium text-zinc-300 hover:bg-[#08080c]"
             >
               Ko'proq yuklash
             </button>
@@ -139,7 +139,7 @@ export default function Gallery() {
           onClick={() => setSelected(null)}
         >
           <div
-            className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-2xl bg-white p-6"
+            className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-2xl bg-[#101018] p-6"
             onClick={(e) => e.stopPropagation()}
           >
             {selected.type === 'IMAGE' ? (
@@ -148,13 +148,13 @@ export default function Gallery() {
               // eslint-disable-next-line jsx-a11y/media-has-caption
               <video src={selected.resultUrl} controls className="w-full rounded-xl" />
             )}
-            <p className="mt-4 text-gray-800">{selected.userPrompt}</p>
-            <p className="mt-1 text-sm text-gray-400">
+            <p className="mt-4 text-zinc-200">{selected.userPrompt}</p>
+            <p className="mt-1 text-sm text-zinc-600">
               {selected.user?.name} · {new Date(selected.createdAt).toLocaleDateString()}
             </p>
             <button
               onClick={() => setSelected(null)}
-              className="mt-6 w-full rounded-lg border border-gray-300 py-2.5 font-medium text-gray-700 hover:bg-gray-50"
+              className="mt-6 w-full rounded-lg border border-white/10 bg-black/30 text-white placeholder:text-zinc-600 py-2.5 font-medium text-zinc-300 hover:bg-[#08080c]"
             >
               Yopish
             </button>

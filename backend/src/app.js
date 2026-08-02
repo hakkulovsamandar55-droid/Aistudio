@@ -33,6 +33,9 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/users', require('./routes/user.routes'));
 app.use('/api/generate', require('./routes/generation.routes'));
+app.use('/api/magic', require('./routes/magic.routes'));
+app.use('/api/projects', require('./routes/project.routes'));
+app.use('/api/modules', require('./routes/module.routes'));
 app.use('/api/payments', require('./routes/payment.routes'));
 app.use('/api/gallery', require('./routes/gallery.routes'));
 app.use('/api/announcements', require('./routes/announcement.routes'));

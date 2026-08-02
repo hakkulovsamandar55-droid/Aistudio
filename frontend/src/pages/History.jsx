@@ -110,8 +110,8 @@ export default function History() {
   return (
     <Layout>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-gray-900">Tarix</h1>
-        <span className="text-sm text-gray-500">{total} ta generatsiya</span>
+        <h1 className="text-2xl font-bold text-white">Tarix</h1>
+        <span className="text-sm text-zinc-500">{total} ta generatsiya</span>
       </div>
 
       <form onSubmit={handleSearch} className="mt-4 flex gap-2">
@@ -119,9 +119,9 @@ export default function History() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="So'rov matni bo'yicha qidirish..."
-          className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+          className="w-full max-w-sm rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none"
         />
-        <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white">
+        <button type="submit" className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white">
           Qidirish
         </button>
         {appliedSearch && (
@@ -131,7 +131,7 @@ export default function History() {
               setSearch('');
               setAppliedSearch('');
             }}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-600"
+            className="rounded-lg border border-white/10 px-4 py-2 text-sm text-zinc-400"
           >
             Tozalash
           </button>
@@ -144,7 +144,7 @@ export default function History() {
             key={f.key}
             onClick={() => setFilterKey(f.key)}
             className={`rounded-full px-4 py-1.5 text-sm font-medium ${
-              filterKey === f.key ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 shadow'
+              filterKey === f.key ? 'bg-violet-600 text-white' : 'bg-[#101018] text-zinc-400 shadow'
             }`}
           >
             {f.label}
@@ -152,19 +152,19 @@ export default function History() {
         ))}
       </div>
 
-      {loading && items.length === 0 && <p className="mt-8 text-gray-500">Yuklanmoqda...</p>}
+      {loading && items.length === 0 && <p className="mt-8 text-zinc-500">Yuklanmoqda...</p>}
 
       {!loading && items.length === 0 && (
-        <p className="mt-8 rounded-xl bg-white p-6 text-center text-gray-500 shadow">
+        <p className="mt-8 rounded-xl bg-[#101018] p-6 text-center text-zinc-500 shadow">
           {appliedSearch ? "Qidiruv bo'yicha hech narsa topilmadi." : "Bu bo'limda hali generatsiya yo'q."}
         </p>
       )}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {items.map((gen) => (
-          <div key={gen.id} className="overflow-hidden rounded-xl bg-white shadow transition hover:shadow-md">
+          <div key={gen.id} className="overflow-hidden rounded-xl bg-[#101018] border border-white/8 transition hover:shadow-md">
             <button onClick={() => setSelected(gen)} className="block w-full text-left">
-              <div className="relative flex aspect-video items-center justify-center bg-gray-100">
+              <div className="relative flex aspect-video items-center justify-center bg-white/5">
                 {gen.resultUrl ? (
                   gen.type === 'IMAGE' ? (
                     <img src={gen.resultUrl} alt={gen.userPrompt} className="h-full w-full object-cover" />
@@ -181,8 +181,8 @@ export default function History() {
                 )}
               </div>
               <div className="px-3 pt-3">
-                <p className="truncate text-sm text-gray-800">{gen.userPrompt}</p>
-                <div className="mt-1 flex items-center justify-between text-xs text-gray-400">
+                <p className="truncate text-sm text-zinc-200">{gen.userPrompt}</p>
+                <div className="mt-1 flex items-center justify-between text-xs text-zinc-600">
                   <span>{new Date(gen.createdAt).toLocaleDateString()}</span>
                   <span>{STATUS_LABELS[gen.status]}</span>
                 </div>
@@ -193,7 +193,7 @@ export default function History() {
               <button
                 onClick={() => toggleFavorite(gen)}
                 title="Sevimlilar"
-                className="flex-1 rounded-lg py-1 text-sm hover:bg-gray-100"
+                className="flex-1 rounded-lg py-1 text-sm hover:bg-white/5"
               >
                 {gen.isFavorite ? '★' : '☆'}
               </button>
@@ -202,14 +202,14 @@ export default function History() {
                   <button
                     onClick={() => togglePublic(gen)}
                     title="Galereyaga joylash"
-                    className="flex-1 rounded-lg py-1 text-sm hover:bg-gray-100"
+                    className="flex-1 rounded-lg py-1 text-sm hover:bg-white/5"
                   >
                     {gen.isPublic ? '🌍' : '🔒'}
                   </button>
                   <button
                     onClick={() => download(gen)}
                     title="Yuklab olish"
-                    className="flex-1 rounded-lg py-1 text-sm hover:bg-gray-100"
+                    className="flex-1 rounded-lg py-1 text-sm hover:bg-white/5"
                   >
                     ⬇️
                   </button>
@@ -218,7 +218,7 @@ export default function History() {
               <button
                 onClick={() => remove(gen)}
                 title="O'chirish"
-                className="flex-1 rounded-lg py-1 text-sm hover:bg-red-50"
+                className="flex-1 rounded-lg py-1 text-sm hover:bg-red-500/10"
               >
                 🗑️
               </button>
@@ -231,7 +231,7 @@ export default function History() {
         <div className="mt-6 text-center">
           <button
             onClick={() => load(page + 1, false)}
-            className="rounded-lg border border-gray-300 px-6 py-2.5 font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-lg border border-white/10 px-6 py-2.5 font-medium text-zinc-300 hover:bg-[#08080c]"
           >
             Ko'proq yuklash
           </button>
@@ -244,7 +244,7 @@ export default function History() {
           onClick={() => setSelected(null)}
         >
           <div
-            className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-2xl bg-white p-6"
+            className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-2xl bg-[#101018] p-6"
             onClick={(e) => e.stopPropagation()}
           >
             {selected.resultUrl ? (
@@ -255,13 +255,13 @@ export default function History() {
                 <video src={selected.resultUrl} controls className="w-full rounded-xl" />
               )
             ) : (
-              <div className="flex aspect-video items-center justify-center rounded-xl bg-gray-100 text-4xl">
+              <div className="flex aspect-video items-center justify-center rounded-xl bg-white/5 text-4xl">
                 {selected.type === 'IMAGE' ? '🖼️' : '🎬'}
               </div>
             )}
 
-            <p className="mt-4 text-gray-800">{selected.userPrompt}</p>
-            <p className="mt-1 text-sm text-gray-400">
+            <p className="mt-4 text-zinc-200">{selected.userPrompt}</p>
+            <p className="mt-1 text-sm text-zinc-600">
               {STATUS_LABELS[selected.status]} · {new Date(selected.createdAt).toLocaleString()}
               {selected.style && selected.style !== 'auto' && ` · ${selected.style}`}
             </p>
@@ -273,14 +273,14 @@ export default function History() {
               {selected.status === 'COMPLETED' && (
                 <button
                   onClick={() => download(selected)}
-                  className="flex-1 rounded-lg bg-indigo-600 py-2.5 font-medium text-white hover:bg-indigo-700"
+                  className="flex-1 rounded-lg bg-violet-600 py-2.5 font-medium text-white hover:bg-violet-500"
                 >
                   Yuklab olish
                 </button>
               )}
               <button
                 onClick={() => setSelected(null)}
-                className="flex-1 rounded-lg border border-gray-300 py-2.5 font-medium text-gray-700 hover:bg-gray-50"
+                className="flex-1 rounded-lg border border-white/10 py-2.5 font-medium text-zinc-300 hover:bg-[#08080c]"
               >
                 Yopish
               </button>

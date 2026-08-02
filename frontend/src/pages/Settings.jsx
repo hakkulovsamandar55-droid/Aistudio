@@ -77,7 +77,7 @@ export default function Settings() {
   return (
     <Layout>
       <div className="mx-auto max-w-2xl space-y-8">
-        <h1 className="text-2xl font-bold text-gray-900">Sozlamalar</h1>
+        <h1 className="text-2xl font-bold text-white">Sozlamalar</h1>
 
         {stats && (
           <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -87,38 +87,38 @@ export default function Settings() {
               { label: 'Ulashilgan', value: stats.shared },
               { label: 'Sarflangan kredit', value: stats.creditsSpent },
             ].map((card) => (
-              <div key={card.label} className="rounded-xl bg-white p-4 text-center shadow">
-                <p className="text-xl font-bold text-gray-900">{card.value}</p>
-                <p className="mt-0.5 text-xs text-gray-500">{card.label}</p>
+              <div key={card.label} className="rounded-xl bg-[#101018] p-4 text-center shadow">
+                <p className="text-xl font-bold text-white">{card.value}</p>
+                <p className="mt-0.5 text-xs text-zinc-500">{card.label}</p>
               </div>
             ))}
           </section>
         )}
 
-        <section className="rounded-2xl bg-white p-6 shadow">
-          <h2 className="font-semibold text-gray-900">Profil</h2>
+        <section className="rounded-2xl bg-[#101018] p-6 shadow">
+          <h2 className="font-semibold text-white">Profil</h2>
           <form onSubmit={saveName} className="mt-4 space-y-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Email</label>
+              <label className="mb-1 block text-sm font-medium text-zinc-300">Email</label>
               <input
                 value={user?.email || ''}
                 disabled
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-500"
+                className="w-full rounded-lg border border-white/8 bg-[#08080c] px-3 py-2 text-zinc-500"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Ism</label>
+              <label className="mb-1 block text-sm font-medium text-zinc-300">Ism</label>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-lg border border-white/10 bg-black/30 text-white placeholder:text-zinc-600 px-3 py-2 focus:border-violet-500 focus:outline-none"
               />
             </div>
             <button
               type="submit"
               disabled={savingName || !name.trim() || name.trim() === user?.name}
-              className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
             >
               {savingName ? 'Saqlanmoqda...' : 'Saqlash'}
             </button>
@@ -126,26 +126,26 @@ export default function Settings() {
         </section>
 
         {referrals && (
-          <section className="rounded-2xl bg-white p-6 shadow">
-            <h2 className="font-semibold text-gray-900">Do'stlarni taklif qiling</h2>
-            <p className="mt-1 text-sm text-gray-500">
+          <section className="rounded-2xl bg-[#101018] p-6 shadow">
+            <h2 className="font-semibold text-white">Do'stlarni taklif qiling</h2>
+            <p className="mt-1 text-sm text-zinc-500">
               Har bir do'stingiz ro'yxatdan o'tganda siz {referrals.rewardPerReferral} kredit olasiz, do'stingiz esa
               qo'shimcha bonus oladi.
             </p>
 
             <div className="mt-4 flex items-center gap-3">
-              <code className="rounded-lg bg-gray-100 px-4 py-2 text-lg font-bold tracking-widest text-indigo-700">
+              <code className="rounded-lg bg-white/5 px-4 py-2 text-lg font-bold tracking-widest text-violet-300">
                 {referrals.referralCode}
               </code>
               <button
                 onClick={copyReferralLink}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-zinc-300 hover:bg-[#08080c]"
               >
                 Havolani nusxalash
               </button>
             </div>
 
-            <div className="mt-4 flex gap-6 text-sm text-gray-600">
+            <div className="mt-4 flex gap-6 text-sm text-zinc-400">
               <span>
                 Taklif qilinganlar: <strong>{referrals.referredCount}</strong>
               </span>
@@ -156,11 +156,11 @@ export default function Settings() {
           </section>
         )}
 
-        <section className="rounded-2xl bg-white p-6 shadow">
-          <h2 className="font-semibold text-gray-900">Parolni o'zgartirish</h2>
+        <section className="rounded-2xl bg-[#101018] p-6 shadow">
+          <h2 className="font-semibold text-white">Parolni o'zgartirish</h2>
           <form onSubmit={savePassword} className="mt-4 space-y-3">
             {passwordError && (
-              <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{passwordError}</div>
+              <div className="rounded-lg bg-red-500/10 px-4 py-2 text-sm text-red-300">{passwordError}</div>
             )}
             <input
               type="password"
@@ -168,7 +168,7 @@ export default function Settings() {
               value={passwords.current}
               onChange={(e) => setPasswords((p) => ({ ...p, current: e.target.value }))}
               placeholder="Joriy parol"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
+              className="w-full rounded-lg border border-white/10 bg-black/30 text-white placeholder:text-zinc-600 px-3 py-2 focus:border-violet-500 focus:outline-none"
             />
             <input
               type="password"
@@ -176,7 +176,7 @@ export default function Settings() {
               value={passwords.next}
               onChange={(e) => setPasswords((p) => ({ ...p, next: e.target.value }))}
               placeholder="Yangi parol (kamida 8 belgi)"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
+              className="w-full rounded-lg border border-white/10 bg-black/30 text-white placeholder:text-zinc-600 px-3 py-2 focus:border-violet-500 focus:outline-none"
             />
             <input
               type="password"
@@ -184,12 +184,12 @@ export default function Settings() {
               value={passwords.confirm}
               onChange={(e) => setPasswords((p) => ({ ...p, confirm: e.target.value }))}
               placeholder="Yangi parolni tasdiqlang"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
+              className="w-full rounded-lg border border-white/10 bg-black/30 text-white placeholder:text-zinc-600 px-3 py-2 focus:border-violet-500 focus:outline-none"
             />
             <button
               type="submit"
               disabled={savingPassword}
-              className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+              className="rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
             >
               {savingPassword ? "O'zgartirilmoqda..." : "Parolni o'zgartirish"}
             </button>

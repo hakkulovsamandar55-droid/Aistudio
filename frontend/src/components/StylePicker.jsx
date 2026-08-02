@@ -3,7 +3,7 @@ export default function StylePicker({ styles, value, onChange, disabled }) {
 
   return (
     <div>
-      <p className="mb-2 text-sm font-medium text-gray-700">Uslub tanlang</p>
+      <p className="mb-2 text-sm font-medium text-zinc-300">Uslub tanlang</p>
       <div className="flex flex-wrap gap-2">
         {styles.map((style) => {
           const selected = value === style.id;
@@ -15,8 +15,8 @@ export default function StylePicker({ styles, value, onChange, disabled }) {
               onClick={() => onChange(style.id)}
               className={`rounded-full border px-3 py-1.5 text-sm transition disabled:opacity-50 ${
                 selected
-                  ? 'border-indigo-600 bg-indigo-600 text-white'
-                  : 'border-gray-300 bg-white text-gray-700 hover:border-indigo-400'
+                  ? 'border-indigo-600 bg-violet-600 text-white'
+                  : 'border-white/10 bg-[#101018] text-zinc-300 hover:border-indigo-400'
               }`}
             >
               {style.emoji} {style.label}

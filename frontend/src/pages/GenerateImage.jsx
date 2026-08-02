@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import StylePicker from '../components/StylePicker';
 import { generationApi } from '../api/generation.api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { Button, Card, Badge, Spinner } from '../components/ui';
 
 export default function GenerateImage() {
-  const { refreshUser } = useAuth();
+  const { credits, refreshUser } = useAuth();
   const toast = useToast();
 
   const [prompt, setPrompt] = useState('');
@@ -17,7 +17,6 @@ export default function GenerateImage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
-  const [showInsufficientModal, setShowInsufficientModal] = useState(false);
 
   useEffect(() => {
     generationApi
@@ -29,6 +28,8 @@ export default function GenerateImage() {
       .catch(() => setStyles([]));
   }, []);
 
+  const notEnough = cost > credits;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!prompt.trim()) return;
@@ -38,13 +39,13 @@ export default function GenerateImage() {
     setResult(null);
 
     try {
-      const response = await generationApi.generateImage(prompt.trim(), { style });
-      setResult(response.data.data);
+      const res = await generationApi.generateImage(prompt.trim(), { style });
+      setResult(res.data.data);
       refreshUser();
       toast.success('Rasm tayyor!');
     } catch (err) {
       if (err.response?.status === 402) {
-        setShowInsufficientModal(true);
+        toast.error('Kredit yetarli emas.');
       } else {
         setError(err.response?.data?.error || 'Rasm yaratishda xatolik yuz berdi.');
       }
@@ -53,29 +54,11 @@ export default function GenerateImage() {
     }
   };
 
-  const handleDownload = async () => {
+  const act = async (fn, okMessage) => {
     try {
-      await generationApi.download(result.id, `ai-studio-${result.id}.png`);
-    } catch {
-      toast.error("Yuklab olishda xatolik yuz berdi.");
-    }
-  };
-
-  const handleShare = async () => {
-    try {
-      const response = await generationApi.setPublic(result.id, !result.isPublic);
-      setResult(response.data.data);
-      toast.success(response.data.data.isPublic ? "Galereyaga joylandi" : 'Galereyadan olib tashlandi');
-    } catch {
-      toast.error('Xatolik yuz berdi.');
-    }
-  };
-
-  const handleFavorite = async () => {
-    try {
-      const response = await generationApi.setFavorite(result.id, !result.isFavorite);
-      setResult(response.data.data);
-      toast.success(response.data.data.isFavorite ? "Sevimlilarga qo'shildi" : 'Sevimlilardan olindi');
+      const res = await fn();
+      setResult(res.data.data);
+      if (okMessage) toast.success(okMessage);
     } catch {
       toast.error('Xatolik yuz berdi.');
     }
@@ -90,116 +73,104 @@ export default function GenerateImage() {
   return (
     <Layout>
       <div className="mx-auto max-w-2xl">
-        <h1 className="text-2xl font-bold text-gray-900">🖼️ Rasm yaratish</h1>
-        <p className="mt-1 text-gray-500">G'oyangizni yozing, AI Studio uni professional rasmga aylantiradi.</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-white">🖼️ Rasm yaratish</h1>
+        <p className="mt-1.5 text-zinc-400">G'oyangizni yozing, uslubni tanlang.</p>
 
         {!result && (
-          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-            <div>
+          <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+            <Card className="p-2">
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 maxLength={500}
                 rows={4}
                 disabled={loading}
-                placeholder="G'oyangizni yozing... masalan: mushuk pitsa pishiryapti kosmosda"
-                className="w-full rounded-xl border border-gray-300 p-4 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-gray-50"
+                placeholder="masalan: mushuk kosmosda pitsa pishiryapti"
+                className="w-full resize-none bg-transparent p-4 text-white placeholder:text-zinc-600 focus:outline-none disabled:opacity-50"
               />
-              <p className="mt-1 text-right text-xs text-gray-400">{prompt.length}/500</p>
-            </div>
+              <div className="px-4 pb-2 text-right text-xs text-zinc-600">{prompt.length}/500</div>
+            </Card>
 
             <StylePicker styles={styles} value={style} onChange={setStyle} disabled={loading} />
 
-            {error && <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</div>}
+            {error && (
+              <div className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</div>
+            )}
 
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">Bu {cost} kredit sarflaydi</span>
-              <button
-                type="submit"
-                disabled={loading || !prompt.trim()}
-                className="rounded-lg bg-indigo-600 px-6 py-2.5 font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50"
-              >
+              <span className="text-sm text-zinc-500">
+                Narx: <span className={notEnough ? 'text-red-400' : 'text-zinc-300'}>◆ {cost}</span>
+              </span>
+              <Button type="submit" disabled={loading || !prompt.trim() || notEnough}>
                 {loading ? 'Yaratilmoqda...' : 'Yaratish'}
-              </button>
+              </Button>
             </div>
           </form>
         )}
 
         {loading && (
-          <div className="mt-8 flex flex-col items-center gap-3 rounded-xl bg-white p-10 shadow">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
-            <p className="text-gray-500">AI sizning g'oyangizni ishlab chiqmoqda...</p>
-          </div>
+          <Card className="mt-8 flex flex-col items-center gap-3 p-12">
+            <Spinner size="lg" />
+            <p className="text-zinc-400">AI sizning g'oyangizni ishlab chiqmoqda...</p>
+          </Card>
         )}
 
-        {result && result.status === 'COMPLETED' && (
+        {result?.status === 'COMPLETED' && (
           <div className="mt-8 space-y-4">
-            <img src={result.resultUrl} alt={result.userPrompt} className="w-full rounded-xl shadow-lg" />
+            <img src={result.resultUrl} alt={result.userPrompt} className="w-full rounded-2xl" />
 
             <div className="flex flex-wrap gap-2">
-              <button
-                onClick={handleFavorite}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() =>
+                  act(() => generationApi.setFavorite(result.id, !result.isFavorite))
+                }
               >
                 {result.isFavorite ? '★ Sevimlida' : '☆ Sevimlilarga'}
-              </button>
-              <button
-                onClick={handleShare}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() =>
+                  act(
+                    () => generationApi.setPublic(result.id, !result.isPublic),
+                    result.isPublic ? 'Galereyadan olindi' : 'Galereyaga joylandi'
+                  )
+                }
               >
                 {result.isPublic ? '🌍 Galereyada' : '🔒 Galereyaga joylash'}
-              </button>
+              </Button>
             </div>
 
             <div className="flex gap-3">
-              <button
-                onClick={handleDownload}
-                className="flex-1 rounded-lg bg-indigo-600 py-2.5 text-center font-medium text-white hover:bg-indigo-700"
+              <Button
+                className="flex-1"
+                onClick={() =>
+                  generationApi
+                    .download(result.id, `ai-studio-${result.id}.png`)
+                    .catch(() => toast.error('Yuklab olishda xatolik.'))
+                }
               >
                 Yuklab olish
-              </button>
-              <button
-                onClick={reset}
-                className="flex-1 rounded-lg border border-gray-300 py-2.5 font-medium text-gray-700 hover:bg-gray-50"
-              >
+              </Button>
+              <Button onClick={reset} variant="secondary" className="flex-1">
                 Yana yaratish
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
-        {result && result.status === 'FAILED' && (
-          <div className="mt-8 rounded-xl bg-red-50 p-6 text-center text-red-600">
-            Xatolik yuz berdi: {result.errorMessage}
-            <button onClick={reset} className="mt-4 block w-full rounded-lg bg-red-600 py-2.5 font-medium text-white">
+        {result?.status === 'FAILED' && (
+          <Card className="mt-8 p-6 text-center">
+            <Badge tone="danger">Xato</Badge>
+            <p className="mt-3 text-zinc-300">{result.errorMessage}</p>
+            <Button onClick={reset} variant="secondary" className="mt-5">
               Qaytadan urinish
-            </button>
-          </div>
+            </Button>
+          </Card>
         )}
       </div>
-
-      {showInsufficientModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
-            <h2 className="text-lg font-bold text-gray-900">Kreditingiz yetarli emas</h2>
-            <p className="mt-2 text-gray-500">Rasm yaratish uchun ko'proq kredit kerak.</p>
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => setShowInsufficientModal(false)}
-                className="flex-1 rounded-lg border border-gray-300 py-2.5 font-medium text-gray-700"
-              >
-                Yopish
-              </button>
-              <Link
-                to="/billing"
-                className="flex-1 rounded-lg bg-indigo-600 py-2.5 font-medium text-white hover:bg-indigo-700"
-              >
-                Kredit sotib olish
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
     </Layout>
   );
 }

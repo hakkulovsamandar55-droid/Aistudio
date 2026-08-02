@@ -3,6 +3,7 @@ const axios = require('axios');
 const generationService = require('../services/generation.service');
 const { getStyles, findStyle } = require('../config/styles.config');
 const { CREDIT_COSTS } = require('../config/credits.config');
+const { listTiers, isValidTier, resolveTier } = require('../services/ai-gateway/videoTiers');
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
 const logger = require('../utils/logger');
@@ -34,6 +35,9 @@ const listStyles = asyncHandler(async (req, res) => {
       image: getStyles('IMAGE'),
       video: getStyles('VIDEO'),
       costs: CREDIT_COSTS,
+      // Quality tiers carry their own prices; `costs.VIDEO` remains the
+      // default-tier price so existing clients keep working.
+      videoTiers: listTiers(),
     },
   });
 });
@@ -52,17 +56,27 @@ const generateImage = asyncHandler(async (req, res) => {
 });
 
 const generateVideo = asyncHandler(async (req, res) => {
-  const { prompt, duration, style } = req.body;
+  const { prompt, duration, style, quality } = req.body;
   assertValidPrompt(prompt);
+
+  if (quality !== undefined && !isValidTier(quality)) {
+    throw new AppError(`Unknown quality tier: ${quality}`, 400);
+  }
 
   const generation = await generationService.createVideoGeneration(req.user.id, prompt.trim(), {
     duration,
     style: normalizeStyle('VIDEO', style),
+    quality,
   });
 
   res.status(202).json({
     success: true,
-    data: { generationId: generation.id, status: generation.status },
+    data: {
+      generationId: generation.id,
+      status: generation.status,
+      quality: resolveTier(quality).id,
+      credits: req.requiredCredits,
+    },
   });
 });
 

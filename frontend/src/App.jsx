@@ -18,6 +18,9 @@ import BillingSuccess from './pages/BillingSuccess';
 import BillingCancel from './pages/BillingCancel';
 import History from './pages/History';
 import Settings from './pages/Settings';
+import Magic from './pages/Magic';
+import Projects from './pages/Projects';
+import ProjectDetail from './pages/ProjectDetail';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminGenerations from './pages/admin/AdminGenerations';
@@ -25,6 +28,9 @@ import AdminPackages from './pages/admin/AdminPackages';
 import AdminAnnouncements from './pages/admin/AdminAnnouncements';
 
 const protectedRoutes = [
+  { path: '/magic', element: <Magic /> },
+  { path: '/projects', element: <Projects /> },
+  { path: '/projects/:id', element: <ProjectDetail /> },
   { path: '/dashboard', element: <Dashboard /> },
   { path: '/generate/image', element: <GenerateImage /> },
   { path: '/generate/video', element: <GenerateVideo /> },

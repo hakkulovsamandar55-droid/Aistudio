@@ -41,13 +41,13 @@ export default function ResetPassword() {
 
   if (!token) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-lg">
-          <h1 className="text-xl font-bold text-gray-900">Havola yaroqsiz</h1>
-          <p className="mt-2 text-sm text-gray-500">Tiklash havolasi to'liq emas.</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#08080c] px-4">
+        <div className="w-full max-w-sm rounded-2xl bg-[#101018] p-8 text-center shadow-lg">
+          <h1 className="text-xl font-bold text-white">Havola yaroqsiz</h1>
+          <p className="mt-2 text-sm text-zinc-500">Tiklash havolasi to'liq emas.</p>
           <Link
             to="/forgot-password"
-            className="mt-6 block rounded-lg bg-indigo-600 py-2.5 font-medium text-white hover:bg-indigo-700"
+            className="mt-6 block rounded-lg bg-violet-600 py-2.5 font-medium text-white hover:bg-violet-500"
           >
             Qaytadan so'rash
           </Link>
@@ -57,11 +57,11 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-lg">
-        <h1 className="text-center text-2xl font-bold text-gray-900">Yangi parol</h1>
+    <div className="flex min-h-screen items-center justify-center bg-[#08080c] px-4">
+      <div className="w-full max-w-sm rounded-2xl bg-[#101018] p-8 shadow-lg">
+        <h1 className="text-center text-2xl font-bold text-white">Yangi parol</h1>
 
-        {error && <div className="mt-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</div>}
+        {error && <div className="mt-4 rounded-lg bg-red-500/10 px-4 py-2 text-sm text-red-300">{error}</div>}
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <input
@@ -70,7 +70,7 @@ export default function ResetPassword() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Yangi parol (kamida 8 belgi)"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-lg border border-white/10 bg-black/30 text-white placeholder:text-zinc-600 px-3 py-2 focus:border-violet-500 focus:outline-none"
           />
           <input
             type="password"
@@ -78,12 +78,12 @@ export default function ResetPassword() {
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             placeholder="Parolni tasdiqlang"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-lg border border-white/10 bg-black/30 text-white placeholder:text-zinc-600 px-3 py-2 focus:border-violet-500 focus:outline-none"
           />
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-lg bg-indigo-600 py-2.5 font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            className="w-full rounded-lg bg-violet-600 py-2.5 font-medium text-white hover:bg-violet-500 disabled:opacity-50"
           >
             {submitting ? 'Saqlanmoqda...' : "Parolni o'zgartirish"}
           </button>
