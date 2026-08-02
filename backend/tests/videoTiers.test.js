@@ -293,4 +293,37 @@ describe('tier pricing over HTTP', () => {
     // hold the Jest process open.
     await waitForGeneration(res.body.data.generationId);
   });
+
+  it.each([
+    ['low', 8], // maxDuration 5
+    ['standard', 8], // maxDuration 5
+    ['better', 15], // maxDuration 10
+  ])('rejects a duration longer than %s tier allows, before spending anything', async (quality) => {
+    const { user, accessToken } = await registerUser();
+    await grantCredits(user.id, 200);
+
+    const res = await request(app)
+      .post('/api/generate/video')
+      .set(auth(accessToken))
+      .send({ prompt: 'a drone shot', quality, duration: 12 });
+
+    expect(res.status).toBe(400);
+
+    const after = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(after.credits).toBe(210);
+    expect(await prisma.generation.count()).toBe(0);
+  });
+
+  it('accepts a duration at exactly the tier maximum', async () => {
+    const { user, accessToken } = await registerUser();
+    await grantCredits(user.id, 200);
+
+    const res = await request(app)
+      .post('/api/generate/video')
+      .set(auth(accessToken))
+      .send({ prompt: 'a drone shot', quality: 'low', duration: 5 });
+
+    expect(res.status).toBe(202);
+    await waitForGeneration(res.body.data.generationId);
+  });
 });

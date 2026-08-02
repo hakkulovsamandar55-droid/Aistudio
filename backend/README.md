@@ -123,9 +123,9 @@ otherwise. Rate limiters stand down under `NODE_ENV=test`.
 
 | Area | Endpoints |
 |---|---|
-| Auth | `POST /auth/register` (accepts `referralCode`), `/login`, `/refresh`, `/forgot-password`, `/reset-password` |
+| Auth | `POST /auth/register` (accepts `referralCode`), `/login`, `/google` (Google ID token), `/refresh`, `/forgot-password`, `/reset-password` |
 | Profile | `GET|PATCH /users/me`, `POST /users/me/password`, `GET /users/me/stats`, `/credits/history`, `/generations`, `/referrals`, `/me/quota`, `POST /users/me/daily-bonus` |
-| Generation | `GET /generate/styles`, `POST /generate/image`, `POST /generate/video`, `GET /generate/:id/status`, `GET /generate/:id/download`, `PATCH /generate/:id/favorite`, `PATCH /generate/:id/public`, `DELETE /generate/:id` |
+| Generation | `GET /generate/styles`, `POST /generate/enhance` (free — prompt only, no credit charge), `POST /generate/image`, `POST /generate/video`, `GET /generate/:id/status`, `GET /generate/:id/download`, `PATCH /generate/:id/favorite`, `PATCH /generate/:id/public`, `DELETE /generate/:id` |
 | Remix | `GET /remix/styles`, `POST /remix` (multipart: `image` file + `style` id) |
 | Public | `GET /gallery`, `GET /announcements`, `GET /payments/packages`, `GET /health` |
 | Payments | `POST /payments/checkout`, `POST /webhooks/stripe` |
@@ -186,6 +186,24 @@ single-use; changing a password also voids any outstanding links.
 enumerated. **There is no mail transport wired up yet** — the raw token is
 logged server-side and, outside production only, returned as `devResetToken`
 so the flow is testable. Swap that for a real email send before launch.
+
+## Google Sign-In
+
+The frontend gets an ID token from Google Identity Services
+(`@react-oauth/google`'s `<GoogleLogin>`) and `POST /auth/google` verifies
+it server-side with `google-auth-library`, checked against
+`GOOGLE_CLIENT_ID` as the token's audience. First sign-in creates an
+account with the same signup bonus as email/password registration and no
+password set; signing in again with the same Google account never creates
+a duplicate; a password account that later signs in with Google matching
+its email gets the Google identity linked onto it instead. A
+password-account user who never sets one can't run `POST
+/users/me/password` — there's nothing to change it from.
+
+Both `GOOGLE_CLIENT_ID` (backend) and `VITE_GOOGLE_CLIENT_ID` (frontend,
+same value) need to be set for the button to work; leave both unset and the
+button simply doesn't render — email/password auth is unaffected either
+way.
 
 ## Project structure
 

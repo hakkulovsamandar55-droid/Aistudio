@@ -40,6 +40,12 @@ const login = asyncHandler(async (req, res) => {
   res.json({ success: true, data: result });
 });
 
+const googleLogin = asyncHandler(async (req, res) => {
+  const { idToken } = req.body;
+  const result = await authService.loginWithGoogle(idToken);
+  res.json({ success: true, data: result });
+});
+
 const refresh = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
   const result = await authService.refreshAccessToken(refreshToken);
@@ -71,4 +77,4 @@ const resetPassword = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { reset: true } });
 });
 
-module.exports = { register, login, refresh, forgotPassword, resetPassword };
+module.exports = { register, login, googleLogin, refresh, forgotPassword, resetPassword };

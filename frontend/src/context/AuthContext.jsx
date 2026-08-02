@@ -51,6 +51,14 @@ export function AuthProvider({ children }) {
     return newUser;
   }, []);
 
+  const loginWithGoogle = useCallback(async (idToken) => {
+    const response = await authApi.googleLogin(idToken);
+    const { user: loggedInUser, accessToken, refreshToken } = response.data.data;
+    tokenStorage.setTokens(accessToken, refreshToken);
+    setUser(loggedInUser);
+    return loggedInUser;
+  }, []);
+
   const logout = useCallback(() => {
     tokenStorage.clear();
     setUser(null);
@@ -69,6 +77,7 @@ export function AuthProvider({ children }) {
     loading,
     login,
     register,
+    loginWithGoogle,
     logout,
     refreshUser,
   };

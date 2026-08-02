@@ -1,6 +1,7 @@
 const axios = require('axios');
 
 const generationService = require('../services/generation.service');
+const promptEnhancer = require('../services/promptEnhancer.service');
 const { getStyles, findStyle } = require('../config/styles.config');
 const { CREDIT_COSTS } = require('../config/credits.config');
 const { listTiers, isValidTier, resolveTier } = require('../services/ai-gateway/videoTiers');
@@ -42,6 +43,24 @@ const listStyles = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Turns a short idea into a fuller, provider-ready prompt without spending a
+ * credit — this is the "Promptni professional qil" step in the create flow,
+ * a preview the user can still edit before anything is generated, not a
+ * generation itself. Deliberately outside checkCredits/checkPlanLimit for
+ * that reason; generateLimiter still applies below since it calls a real
+ * OpenAI request and must not become a free way to hammer that API.
+ */
+const enhancePrompt = asyncHandler(async (req, res) => {
+  const { prompt, type } = req.body;
+  assertValidPrompt(prompt);
+
+  const enhancer = type === 'IMAGE' ? promptEnhancer.enhanceImagePrompt : promptEnhancer.enhanceVideoPrompt;
+  const { enhancedPrompt } = await enhancer(prompt.trim());
+
+  res.json({ success: true, data: { originalPrompt: prompt.trim(), enhancedPrompt } });
+});
+
 const generateImage = asyncHandler(async (req, res) => {
   const { prompt, size, quality, style } = req.body;
   assertValidPrompt(prompt);
@@ -61,6 +80,16 @@ const generateVideo = asyncHandler(async (req, res) => {
 
   if (quality !== undefined && !isValidTier(quality)) {
     throw new AppError(`Unknown quality tier: ${quality}`, 400);
+  }
+
+  if (duration !== undefined) {
+    const tier = resolveTier(quality);
+    if (Number(duration) > tier.maxDuration) {
+      throw new AppError(
+        `${tier.label} sifat darajasida video uzunligi ${tier.maxDuration}s dan oshmasligi kerak`,
+        400
+      );
+    }
   }
 
   const generation = await generationService.createVideoGeneration(req.user.id, prompt.trim(), {
@@ -172,6 +201,7 @@ const download = asyncHandler(async (req, res) => {
 
 module.exports = {
   listStyles,
+  enhancePrompt,
   generateImage,
   generateVideo,
   getStatus,

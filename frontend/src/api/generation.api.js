@@ -2,6 +2,8 @@ import api from './client';
 
 export const generationApi = {
   getStyles: () => api.get('/generate/styles'),
+  // Free — turns a short idea into a fuller prompt without spending a credit.
+  enhance: (prompt, type) => api.post('/generate/enhance', { prompt, type }),
   generateImage: (prompt, options = {}) => api.post('/generate/image', { prompt, ...options }),
   generateVideo: (prompt, options = {}) => api.post('/generate/video', { prompt, ...options }),
   getStatus: (id) => api.get(`/generate/${id}/status`),

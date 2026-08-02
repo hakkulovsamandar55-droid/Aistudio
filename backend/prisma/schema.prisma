@@ -54,7 +54,11 @@ enum PlanType {
 model User {
   id               String    @id @default(uuid())
   email            String    @unique
-  password         String
+  /// Null for accounts created via Google Sign-In, which never set a
+  /// password. loginUser() rejects the login attempt outright when this is
+  /// null rather than trying to bcrypt.compare against nothing.
+  password         String?
+  googleId         String?   @unique @map("google_id")
   name             String
   credits          Int       @default(10)
   role             Role      @default(USER)

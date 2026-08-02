@@ -114,6 +114,41 @@ body {
   animation: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+@keyframes shake {
+  10%,
+  90% {
+    transform: translateX(-1px);
+  }
+  20%,
+  80% {
+    transform: translateX(2px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-4px);
+  }
+  40%,
+  60% {
+    transform: translateX(4px);
+  }
+}
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Crossfade between the login/register field sets: fades out fast, the
+   incoming content (a fresh .animate-rise mount) fades/slides back in. */
+@keyframes fade-out-down {
+  to {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.animate-fade-out {
+  animation: fade-out-down 0.12s ease-in both;
+}
+
 @keyframes shimmer {
   100% {
     transform: translateX(100%);

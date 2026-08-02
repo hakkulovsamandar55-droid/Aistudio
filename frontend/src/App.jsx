@@ -1,8 +1,21 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+/** A no-op wrapper when Google sign-in isn't configured, so the app never
+ * depends on having a client id to boot. */
+function GoogleProvider({ children }) {
+  return GOOGLE_CLIENT_ID ? (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>{children}</GoogleOAuthProvider>
+  ) : (
+    children
+  );
+}
 
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -70,31 +83,33 @@ const adminRoutes = [
 function App() {
   return (
     <BrowserRouter>
-      <ToastProvider>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/billing/success" element={<BillingSuccess />} />
-            <Route path="/billing/cancel" element={<BillingCancel />} />
+      <GoogleProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/billing/success" element={<BillingSuccess />} />
+              <Route path="/billing/cancel" element={<BillingCancel />} />
 
-            {redirects.map(({ from, to }) => (
-              <Route key={from} path={from} element={<Navigate to={to} replace />} />
-            ))}
+              {redirects.map(({ from, to }) => (
+                <Route key={from} path={from} element={<Navigate to={to} replace />} />
+              ))}
 
-            {protectedRoutes.map(({ path, element }) => (
-              <Route key={path} path={path} element={<ProtectedRoute>{element}</ProtectedRoute>} />
-            ))}
+              {protectedRoutes.map(({ path, element }) => (
+                <Route key={path} path={path} element={<ProtectedRoute>{element}</ProtectedRoute>} />
+              ))}
 
-            {adminRoutes.map(({ path, element }) => (
-              <Route key={path} path={path} element={<AdminRoute>{element}</AdminRoute>} />
-            ))}
-          </Routes>
-        </AuthProvider>
-      </ToastProvider>
+              {adminRoutes.map(({ path, element }) => (
+                <Route key={path} path={path} element={<AdminRoute>{element}</AdminRoute>} />
+              ))}
+            </Routes>
+          </AuthProvider>
+        </ToastProvider>
+      </GoogleProvider>
     </BrowserRouter>
   );
 }

@@ -11,6 +11,12 @@ router.use(authMiddleware);
 
 router.get('/styles', generationController.listStyles);
 
+// Free — no checkPlanLimit/checkCredits. It calls the OpenAI enhancer
+// (real cost to us) but never a paid generation provider, so it stays
+// behind the rate limiter without the credit gate the actual generation
+// endpoints below have.
+router.post('/enhance', generateLimiter, generationController.enhancePrompt);
+
 // The rate limiter is scoped to the two endpoints that actually cost money.
 // It must NOT cover /:id/status — the video page polls that every 5s, which
 // would otherwise trip the limit mid-generation.

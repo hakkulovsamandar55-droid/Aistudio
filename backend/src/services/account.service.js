@@ -44,6 +44,11 @@ async function changePassword(userId, currentPassword, newPassword) {
   if (!user) {
     throw new AppError('User not found', 404);
   }
+  if (!user.password) {
+    // Signed up via Google, so there is no password to change — they'd set
+    // one for the first time via "forgot password" instead.
+    throw new AppError('This account signs in with Google and has no password to change', 400);
+  }
 
   const matches = await bcrypt.compare(currentPassword, user.password);
   if (!matches) {

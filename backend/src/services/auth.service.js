@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 
 const prisma = require('../config/db');
 const { BONUSES } = require('../config/credits.config');
@@ -7,6 +8,17 @@ const accountService = require('./account.service');
 const AppError = require('../utils/AppError');
 
 const SALT_ROUNDS = 10;
+
+// Constructed lazily for the same reason the OpenAI client is: the server
+// must boot without GOOGLE_CLIENT_ID set, and only fail when Google sign-in
+// is actually attempted.
+let _googleClient;
+function getGoogleClient() {
+  if (!_googleClient) {
+    _googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  }
+  return _googleClient;
+}
 
 function signAccessToken(userId) {
   return jwt.sign({ sub: userId }, process.env.JWT_SECRET, {
@@ -118,13 +130,99 @@ async function registerUser(email, password, name, referralCode) {
 
 async function loginUser(email, password) {
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
+  if (!user || !user.password) {
+    // Same message either way — confirming an account exists but has no
+    // password (Google-only) is as much of an account-enumeration leak as
+    // confirming it doesn't exist at all.
     throw new AppError('Invalid email or password', 401);
   }
 
   const passwordMatches = await bcrypt.compare(password, user.password);
   if (!passwordMatches) {
     throw new AppError('Invalid email or password', 401);
+  }
+
+  if (!user.isActive) {
+    throw new AppError('This account has been suspended', 403);
+  }
+
+  return {
+    user: toPublicUser(user),
+    accessToken: signAccessToken(user.id),
+    refreshToken: signRefreshToken(user.id),
+  };
+}
+
+/**
+ * Verifies a Google Identity Services ID token and signs the user in,
+ * creating the account on first sign-in (same signup bonus as email/password
+ * registration). An email/password account that later signs in with the
+ * same Google address gets the Google identity linked onto it rather than
+ * getting a second account — the two are the same person.
+ */
+async function loginWithGoogle(idToken) {
+  if (!idToken) {
+    throw new AppError('Google ID token is required', 400);
+  }
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    throw new AppError('Google sign-in is not configured on this server', 503);
+  }
+
+  let payload;
+  try {
+    const ticket = await getGoogleClient().verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    payload = ticket.getPayload();
+  } catch (err) {
+    throw new AppError('Invalid Google credential', 401);
+  }
+
+  if (!payload?.email || !payload.email_verified) {
+    throw new AppError('Google account has no verified email', 401);
+  }
+
+  const email = payload.email.toLowerCase();
+  let user = await prisma.user.findUnique({ where: { googleId: payload.sub } });
+
+  if (!user) {
+    const existingByEmail = await prisma.user.findUnique({ where: { email } });
+
+    if (existingByEmail) {
+      // Same person, previously registered with a password — attach the
+      // Google identity instead of creating a second account for one person.
+      user = await prisma.user.update({
+        where: { id: existingByEmail.id },
+        data: { googleId: payload.sub },
+      });
+    } else {
+      const newReferralCode = await accountService.generateUniqueReferralCode();
+
+      user = await prisma.$transaction(async (tx) => {
+        const created = await tx.user.create({
+          data: {
+            email,
+            password: null,
+            googleId: payload.sub,
+            name: payload.name || email.split('@')[0],
+            credits: BONUSES.SIGNUP,
+            referralCode: newReferralCode,
+          },
+        });
+
+        await tx.creditTransaction.create({
+          data: {
+            userId: created.id,
+            amount: BONUSES.SIGNUP,
+            type: 'SIGNUP_BONUS',
+            description: 'Welcome bonus for signing up with Google',
+          },
+        });
+
+        return created;
+      });
+    }
   }
 
   if (!user.isActive) {
@@ -167,6 +265,7 @@ async function refreshAccessToken(refreshToken) {
 module.exports = {
   registerUser,
   loginUser,
+  loginWithGoogle,
   refreshAccessToken,
   toPublicUser,
 };
