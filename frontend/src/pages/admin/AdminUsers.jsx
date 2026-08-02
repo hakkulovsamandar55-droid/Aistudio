@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import AdminLayout from '../../components/AdminLayout';
 import { adminApi } from '../../api/admin.api';
+import { Icon } from '../../components/icons';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -103,24 +104,24 @@ export default function AdminUsers() {
 
   return (
     <AdminLayout>
-      <h1 className="text-2xl font-bold text-white">Foydalanuvchilar</h1>
+      <h1 className="text-2xl font-bold text-[#1c1a17]">Foydalanuvchilar</h1>
 
       <form onSubmit={handleSearch} className="mt-4 flex gap-2">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Email yoki ism bo'yicha qidirish..."
-          className="w-full max-w-sm rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white placeholder-gray-500 focus:border-indigo-500 focus:outline-none"
+          className="w-full max-w-sm rounded-lg border border-[#e8e0d3] bg-white px-3 py-2 text-[#1c1a17] placeholder-[#a1978a] focus:border-[#5b45e0] focus:outline-none"
         />
-        <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700">
+        <button type="submit" className="rounded-lg bg-[#5b45e0] px-4 py-2 font-medium text-[#1c1a17] hover:bg-[#4733c4]">
           Qidirish
         </button>
       </form>
 
-      <div className="mt-6 overflow-x-auto rounded-xl bg-gray-800">
+      <div className="mt-6 overflow-x-auto rounded-xl border border-[#e8e0d3] bg-white">
         <table className="w-full text-left text-sm">
-          <thead className="text-gray-400">
-            <tr className="border-b border-gray-700">
+          <thead className="text-[#6d655a]">
+            <tr className="border-b border-[#e8e0d3]">
               <th className="px-4 py-3">Ism</th>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Kredit</th>
@@ -133,35 +134,35 @@ export default function AdminUsers() {
               <tr
                 key={u.id}
                 onClick={() => openUser(u)}
-                className="cursor-pointer border-b border-gray-700 text-gray-200 hover:bg-gray-700"
+                className="cursor-pointer border-b border-[#e8e0d3] text-[#37322b] hover:bg-[#faf7f1]"
               >
                 <td className="px-4 py-3">{u.name}</td>
                 <td className="px-4 py-3">{u.email}</td>
                 <td className="px-4 py-3">{u.credits}</td>
                 <td className="px-4 py-3">
-                  <span className={u.role === 'ADMIN' ? 'text-indigo-400' : 'text-gray-400'}>{u.role}</span>
+                  <span className={u.role === 'ADMIN' ? 'text-[#5b45e0]' : 'text-[#6d655a]'}>{u.role}</span>
                 </td>
                 <td className="px-4 py-3">
                   {u.isActive ? (
-                    <span className="text-green-400">Faol</span>
+                    <span className="text-[#1f7a45]">Faol</span>
                   ) : (
-                    <span className="text-red-400">Bloklangan</span>
+                    <span className="text-[#a8352a]">Bloklangan</span>
                   )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {loading && <p className="p-4 text-gray-500">Yuklanmoqda...</p>}
-        {!loading && users.length === 0 && <p className="p-4 text-gray-500">Foydalanuvchi topilmadi.</p>}
+        {loading && <p className="p-4 text-[#a1978a]">Yuklanmoqda...</p>}
+        {!loading && users.length === 0 && <p className="p-4 text-[#a1978a]">Foydalanuvchi topilmadi.</p>}
       </div>
 
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center gap-3 text-sm text-gray-400">
+        <div className="mt-4 flex items-center gap-3 text-sm text-[#6d655a]">
           <button
             disabled={page <= 1}
             onClick={() => loadUsers(page - 1, search)}
-            className="rounded-lg border border-gray-700 px-3 py-1.5 disabled:opacity-40"
+            className="rounded-lg border border-[#e8e0d3] px-3 py-1.5 disabled:opacity-40"
           >
             Oldingi
           </button>
@@ -171,7 +172,7 @@ export default function AdminUsers() {
           <button
             disabled={page >= totalPages}
             onClick={() => loadUsers(page + 1, search)}
-            className="rounded-lg border border-gray-700 px-3 py-1.5 disabled:opacity-40"
+            className="rounded-lg border border-[#e8e0d3] px-3 py-1.5 disabled:opacity-40"
           >
             Keyingi
           </button>
@@ -180,31 +181,34 @@ export default function AdminUsers() {
 
       {selected && (
         <div
-          className="fixed inset-0 flex items-center justify-center bg-black/60 px-4"
+          className="fixed inset-0 flex items-center justify-center bg-[#1c1a17]/50 px-4"
           onClick={() => setSelected(null)}
         >
           <div
-            className="max-h-[85vh] w-full max-w-lg overflow-auto rounded-2xl bg-gray-800 p-6 text-gray-100"
+            className="max-h-[85vh] w-full max-w-lg overflow-auto rounded-2xl border border-[#e8e0d3] bg-white p-6 text-[#1c1a17]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-bold text-white">{selected.name}</h2>
-            <p className="text-sm text-gray-400">{selected.email}</p>
+            <h2 className="text-lg font-bold text-[#1c1a17]">{selected.name}</h2>
+            <p className="text-sm text-[#6d655a]">{selected.email}</p>
 
-            {!detail && <p className="mt-4 text-gray-500">Yuklanmoqda...</p>}
+            {!detail && <p className="mt-4 text-[#a1978a]">Yuklanmoqda...</p>}
 
             {detail && (
               <>
                 <div className="mt-4 flex flex-wrap gap-2 text-sm">
-                  <span className="rounded-full bg-gray-700 px-3 py-1">💎 {detail.credits} kredit</span>
-                  <span className="rounded-full bg-gray-700 px-3 py-1">{detail.role}</span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f4efe6] px-3 py-1">
+                    <Icon name="credit" size="xs" />
+                    {detail.credits} kredit
+                  </span>
+                  <span className="rounded-full bg-[#f4efe6] px-3 py-1">{detail.role}</span>
                   <span
                     className={`rounded-full px-3 py-1 ${
-                      detail.plan === 'PRO' ? 'bg-indigo-900/50 text-indigo-300' : 'bg-gray-700'
+                      detail.plan === 'PRO' ? 'bg-[#efecff] text-[#4733c4]' : 'bg-[#f4efe6]'
                     }`}
                   >
-                    {detail.plan === 'PRO' ? '⭐ Pro' : 'Bepul'}
+                    {detail.plan === 'PRO' ? 'Pro' : 'Bepul'}
                   </span>
-                  <span className="rounded-full bg-gray-700 px-3 py-1">
+                  <span className="rounded-full bg-[#f4efe6] px-3 py-1">
                     {detail.isActive ? 'Faol' : 'Bloklangan'}
                   </span>
                 </div>
@@ -213,14 +217,14 @@ export default function AdminUsers() {
                   <button
                     onClick={toggleActive}
                     disabled={busy}
-                    className="flex-1 rounded-lg border border-gray-600 py-2 text-sm hover:bg-gray-700 disabled:opacity-50"
+                    className="flex-1 rounded-lg border border-[#e8e0d3] py-2 text-sm hover:bg-[#faf7f1] disabled:opacity-50"
                   >
                     {detail.isActive ? 'Bloklash' : 'Blokdan chiqarish'}
                   </button>
                   <button
                     onClick={toggleRole}
                     disabled={busy}
-                    className="flex-1 rounded-lg border border-gray-600 py-2 text-sm hover:bg-gray-700 disabled:opacity-50"
+                    className="flex-1 rounded-lg border border-[#e8e0d3] py-2 text-sm hover:bg-[#faf7f1] disabled:opacity-50"
                   >
                     {detail.role === 'ADMIN' ? 'Admin huquqini olish' : 'Admin qilish'}
                   </button>
@@ -229,46 +233,46 @@ export default function AdminUsers() {
                 <button
                   onClick={togglePlan}
                   disabled={busy}
-                  className="mt-2 w-full rounded-lg border border-gray-600 py-2 text-sm hover:bg-gray-700 disabled:opacity-50"
+                  className="mt-2 w-full rounded-lg border border-[#e8e0d3] py-2 text-sm hover:bg-[#faf7f1] disabled:opacity-50"
                 >
                   {detail.plan === 'PRO' ? "Pro'dan Bepulga o'tkazish" : "Pro tarifga o'tkazish"}
                 </button>
 
-                <form onSubmit={handleAdjustCredits} className="mt-5 space-y-2 border-t border-gray-700 pt-4">
-                  <p className="text-sm font-medium text-gray-300">Kredit qo'shish / ayirish</p>
+                <form onSubmit={handleAdjustCredits} className="mt-5 space-y-2 border-t border-[#e8e0d3] pt-4">
+                  <p className="text-sm font-medium text-[#37322b]">Kredit qo'shish / ayirish</p>
                   <div className="flex gap-2">
                     <input
                       type="number"
                       value={creditAmount}
                       onChange={(e) => setCreditAmount(e.target.value)}
                       placeholder="masalan 50 yoki -20"
-                      className="w-32 rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 text-sm"
+                      className="w-32 rounded-lg border border-[#e8e0d3] bg-[#faf7f1] px-3 py-2 text-sm"
                     />
                     <input
                       type="text"
                       value={creditReason}
                       onChange={(e) => setCreditReason(e.target.value)}
                       placeholder="Sabab (ixtiyoriy)"
-                      className="flex-1 rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 text-sm"
+                      className="flex-1 rounded-lg border border-[#e8e0d3] bg-[#faf7f1] px-3 py-2 text-sm"
                     />
                   </div>
-                  {actionError && <p className="text-sm text-red-400">{actionError}</p>}
+                  {actionError && <p className="text-sm text-[#a8352a]">{actionError}</p>}
                   <button
                     type="submit"
                     disabled={busy || !creditAmount}
-                    className="w-full rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                    className="w-full rounded-lg bg-[#5b45e0] py-2 text-sm font-medium text-[#1c1a17] hover:bg-[#4733c4] disabled:opacity-50"
                   >
                     Qo'llash
                   </button>
                 </form>
 
-                <div className="mt-5 border-t border-gray-700 pt-4">
-                  <p className="text-sm font-medium text-gray-300">So'nggi generatsiyalar</p>
+                <div className="mt-5 border-t border-[#e8e0d3] pt-4">
+                  <p className="text-sm font-medium text-[#37322b]">So'nggi generatsiyalar</p>
                   {detail.recentGenerations.length === 0 && (
-                    <p className="mt-2 text-sm text-gray-500">Yo'q</p>
+                    <p className="mt-2 text-sm text-[#a1978a]">Yo'q</p>
                   )}
                   {detail.recentGenerations.map((g) => (
-                    <div key={g.id} className="mt-2 flex justify-between text-xs text-gray-400">
+                    <div key={g.id} className="mt-2 flex justify-between text-xs text-[#6d655a]">
                       <span className="truncate">{g.userPrompt}</span>
                       <span>{g.status}</span>
                     </div>
@@ -279,7 +283,7 @@ export default function AdminUsers() {
 
             <button
               onClick={() => setSelected(null)}
-              className="mt-6 w-full rounded-lg border border-gray-600 py-2 text-sm hover:bg-gray-700"
+              className="mt-6 w-full rounded-lg border border-[#e8e0d3] py-2 text-sm hover:bg-[#faf7f1]"
             >
               Yopish
             </button>

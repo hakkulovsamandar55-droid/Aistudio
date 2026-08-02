@@ -8,42 +8,42 @@ const REMIX_STYLES = [
   {
     id: 'anime',
     label: 'Anime',
-    emoji: '🎌',
+    icon: 'smile',
     promptSuffix:
       'anime style, cel shading, vibrant colors, clean line art, expressive character design — keep the original composition and subject',
   },
   {
     id: 'pixar',
     label: 'Pixar',
-    emoji: '🧸',
+    icon: 'cube',
     promptSuffix:
       '3D animated Pixar-style render, soft rounded features, warm lighting, expressive eyes — keep the original composition and subject',
   },
   {
     id: 'lego',
     label: 'LEGO',
-    emoji: '🧱',
+    icon: 'package',
     promptSuffix:
       'LEGO minifigure style, plastic brick texture, blocky proportions, glossy render — keep the original composition and subject',
   },
   {
     id: 'comic',
     label: 'Komiks',
-    emoji: '💥',
+    icon: 'sparkle',
     promptSuffix:
       'comic book style, bold ink outlines, halftone dot shading, dynamic action lines — keep the original composition and subject',
   },
   {
     id: 'gta',
     label: 'GTA',
-    emoji: '🌴',
+    icon: 'palette',
     promptSuffix:
       'GTA video game cover art style, painterly poster illustration, high contrast, stylized shading — keep the original composition and subject',
   },
   {
     id: 'realistic',
     label: 'Realistik',
-    emoji: '📷',
+    icon: 'camera',
     promptSuffix:
       'photorealistic, natural lighting, sharp focus, lifelike detail — keep the original composition and subject',
   },

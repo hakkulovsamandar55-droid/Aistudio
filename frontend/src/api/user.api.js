@@ -11,5 +11,6 @@ export const userApi = {
   getGenerations: (page = 1, limit = 20, filters = {}) =>
     api.get('/users/me/generations', { params: { page, limit, ...filters } }),
   getReferrals: () => api.get('/users/me/referrals'),
+  getQuota: () => api.get('/users/me/quota'),
   claimDailyBonus: () => api.post('/users/me/daily-bonus'),
 };

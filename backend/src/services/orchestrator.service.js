@@ -52,7 +52,7 @@ async function preview(userRequest) {
       module: item.module,
       label: item.label,
       credits: creditCostFor(item.module),
-      emoji: getModule(item.module).emoji,
+      icon: getModule(item.module).icon,
     })),
     totalCredits: taskPlanner.planCost(tasks),
     estimatedSeconds: taskPlanner.planDuration(tasks),

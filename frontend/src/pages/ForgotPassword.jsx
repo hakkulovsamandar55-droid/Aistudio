@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import AuthLayout from '../components/AuthLayout';
+import { Icon } from '../components/icons';
 import { authApi } from '../api/auth.api';
+import { Button, Input } from '../components/ui';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -28,62 +31,59 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#08080c] px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-[#101018] p-8 shadow-lg">
-        <h1 className="text-center text-2xl font-bold text-white">Parolni tiklash</h1>
+    <AuthLayout
+      title="Parolni tiklash"
+      subtitle={sent ? undefined : 'Emailingizni kiriting — tiklash havolasini yuboramiz.'}
+      footer={
+        <Link to="/login" className="font-medium text-[#5b45e0] hover:underline">
+          Kirish sahifasiga qaytish
+        </Link>
+      }
+    >
+      {!sent ? (
+        <>
+          {error && (
+            <div className="mb-4 rounded-xl bg-[#fbeceb] px-4 py-3 text-sm text-[#a8352a]">
+              {error}
+            </div>
+          )}
 
-        {!sent ? (
-          <>
-            <p className="mt-1 text-center text-sm text-zinc-500">
-              Emailingizni kiriting — tiklash havolasini yuboramiz.
-            </p>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="Email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="siz@email.com"
+            />
+            <Button type="submit" disabled={submitting} className="w-full" icon="mail">
+              {submitting ? 'Yuborilmoqda...' : 'Yuborish'}
+            </Button>
+          </form>
+        </>
+      ) : (
+        <div className="text-center">
+          <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e7f5ec] text-[#1f7a45]">
+            <Icon name="check" size="lg" />
+          </span>
+          <p className="mt-3.5 text-sm text-[#6d655a]">
+            Agar bu email ro'yxatdan o'tgan bo'lsa, tiklash havolasi yuborildi.
+          </p>
 
-            {error && <div className="mt-4 rounded-lg bg-red-500/10 px-4 py-2 text-sm text-red-300">{error}</div>}
-
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="siz@email.com"
-                className="w-full rounded-lg border border-white/10 bg-black/30 text-white placeholder:text-zinc-600 px-3 py-2 focus:border-violet-500 focus:outline-none"
-              />
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full rounded-lg bg-violet-600 py-2.5 font-medium text-white hover:bg-violet-500 disabled:opacity-50"
+          {devToken && (
+            <div className="mt-4 rounded-xl border border-[#f2e0bd] bg-[#fdf3e3] p-3 text-left">
+              <p className="text-xs font-medium text-[#95601a]">Dev rejimi — tiklash havolasi:</p>
+              <Link
+                to={`/reset-password?token=${devToken}`}
+                className="mt-1 block break-all text-xs text-[#5b45e0] underline"
               >
-                {submitting ? 'Yuborilmoqda...' : 'Yuborish'}
-              </button>
-            </form>
-          </>
-        ) : (
-          <div className="mt-6 space-y-4 text-center">
-            <p className="text-sm text-zinc-400">
-              Agar bu email ro'yxatdan o'tgan bo'lsa, tiklash havolasi yuborildi.
-            </p>
-
-            {devToken && (
-              <div className="rounded-lg bg-amber-500/10 p-3 text-left">
-                <p className="text-xs font-medium text-amber-300">Dev rejimi — tiklash havolasi:</p>
-                <Link
-                  to={`/reset-password?token=${devToken}`}
-                  className="mt-1 block break-all text-xs text-violet-400 underline"
-                >
-                  /reset-password?token={devToken.slice(0, 24)}...
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
-
-        <p className="mt-6 text-center text-sm text-zinc-500">
-          <Link to="/login" className="font-medium text-violet-400 hover:underline">
-            Kirish sahifasiga qaytish
-          </Link>
-        </p>
-      </div>
-    </div>
+                /reset-password?token={devToken.slice(0, 24)}...
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+    </AuthLayout>
   );
 }

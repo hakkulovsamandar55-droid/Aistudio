@@ -3,9 +3,9 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState } fro
 const ToastContext = createContext(null);
 
 const VARIANTS = {
-  success: 'bg-green-600',
-  error: 'bg-red-600',
-  info: 'bg-gray-800',
+  success: 'bg-[#1f7a45]',
+  error: 'bg-[#c33e32]',
+  info: 'bg-[#37322b]',
 };
 
 export function ToastProvider({ children }) {
@@ -41,12 +41,13 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center gap-2 px-4">
+      {/* Sits above the bottom tab bar rather than behind it. */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-20 z-50 flex flex-col items-center gap-2 px-4">
         {toasts.map((toast) => (
           <button
             key={toast.id}
             onClick={() => dismiss(toast.id)}
-            className={`pointer-events-auto w-full max-w-sm rounded-xl px-4 py-3 text-left text-sm font-medium text-white shadow-lg ${
+            className={`animate-rise pointer-events-auto w-full max-w-sm rounded-xl px-4 py-3 text-left text-sm font-medium text-white shadow-[0_6px_24px_rgba(28,26,23,0.18)] ${
               VARIANTS[toast.variant] || VARIANTS.info
             }`}
           >

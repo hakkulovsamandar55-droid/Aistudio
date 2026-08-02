@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import AuthLayout from '../components/AuthLayout';
+import { Icon } from '../components/icons';
 import { authApi } from '../api/auth.api';
 import { useToast } from '../context/ToastContext';
+import { Button, Input } from '../components/ui';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -30,7 +33,7 @@ export default function ResetPassword() {
     setSubmitting(true);
     try {
       await authApi.resetPassword(token, password);
-      toast.success("Parol yangilandi — endi kirishingiz mumkin");
+      toast.success('Parol yangilandi — endi kirishingiz mumkin');
       navigate('/login');
     } catch (err) {
       setError(err.response?.data?.error || 'Xatolik yuz berdi.');
@@ -41,54 +44,45 @@ export default function ResetPassword() {
 
   if (!token) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#08080c] px-4">
-        <div className="w-full max-w-sm rounded-2xl bg-[#101018] p-8 text-center shadow-lg">
-          <h1 className="text-xl font-bold text-white">Havola yaroqsiz</h1>
-          <p className="mt-2 text-sm text-zinc-500">Tiklash havolasi to'liq emas.</p>
-          <Link
-            to="/forgot-password"
-            className="mt-6 block rounded-lg bg-violet-600 py-2.5 font-medium text-white hover:bg-violet-500"
-          >
+      <AuthLayout title="Havola yaroqsiz">
+        <div className="text-center">
+          <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fbeceb] text-[#a8352a]">
+            <Icon name="alert" size="lg" />
+          </span>
+          <p className="mt-3.5 text-sm text-[#6d655a]">Tiklash havolasi to'liq emas.</p>
+          <Button to="/forgot-password" className="mt-5 w-full">
             Qaytadan so'rash
-          </Link>
+          </Button>
         </div>
-      </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#08080c] px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-[#101018] p-8 shadow-lg">
-        <h1 className="text-center text-2xl font-bold text-white">Yangi parol</h1>
+    <AuthLayout title="Yangi parol" subtitle="Hisobingiz uchun yangi parol tanlang.">
+      {error && (
+        <div className="mb-4 rounded-xl bg-[#fbeceb] px-4 py-3 text-sm text-[#a8352a]">{error}</div>
+      )}
 
-        {error && <div className="mt-4 rounded-lg bg-red-500/10 px-4 py-2 text-sm text-red-300">{error}</div>}
-
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Yangi parol (kamida 8 belgi)"
-            className="w-full rounded-lg border border-white/10 bg-black/30 text-white placeholder:text-zinc-600 px-3 py-2 focus:border-violet-500 focus:outline-none"
-          />
-          <input
-            type="password"
-            required
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            placeholder="Parolni tasdiqlang"
-            className="w-full rounded-lg border border-white/10 bg-black/30 text-white placeholder:text-zinc-600 px-3 py-2 focus:border-violet-500 focus:outline-none"
-          />
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-lg bg-violet-600 py-2.5 font-medium text-white hover:bg-violet-500 disabled:opacity-50"
-          >
-            {submitting ? 'Saqlanmoqda...' : "Parolni o'zgartirish"}
-          </button>
-        </form>
-      </div>
-    </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          type="password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Yangi parol (kamida 8 belgi)"
+        />
+        <Input
+          type="password"
+          required
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          placeholder="Parolni tasdiqlang"
+        />
+        <Button type="submit" disabled={submitting} className="w-full" icon="lock">
+          {submitting ? 'Saqlanmoqda...' : "Parolni o'zgartirish"}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }

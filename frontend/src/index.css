@@ -2,28 +2,36 @@
 
 /* ---------------------------------------------------------------
    AI Studio design tokens.
-   The app is dark-first: a near-black canvas with a violet→fuchsia
-   accent, so generated imagery is the brightest thing on screen.
+
+   Light-first: a warm cream canvas with white cards floating on it.
+   Cream rather than pure white because a full-white background next to
+   generated imagery is harsh over a long session, and the warmth keeps
+   the app from reading as a plain document.
+
+   Neutrals are warm on purpose (a touch of yellow/red in the grey), so
+   they sit with the cream instead of looking dirty next to it.
    --------------------------------------------------------------- */
 @theme {
-  --color-canvas: #08080c;
-  --color-surface: #101018;
-  --color-surface-2: #16161f;
-  --color-line: #24242f;
+  --color-canvas: #faf7f1;
+  --color-surface: #ffffff;
+  --color-surface-2: #f4efe6;
+  --color-line: #e8e0d3;
+  --color-line-strong: #d8cdba;
 
-  --color-ink: #f4f4f7;
-  --color-ink-muted: #9a9aab;
-  --color-ink-faint: #6b6b7d;
+  --color-ink: #1c1a17;
+  --color-ink-muted: #6d655a;
+  --color-ink-faint: #a1978a;
 
-  --color-brand: #7c5cff;
-  --color-brand-soft: #a78bfa;
-  --color-accent: #e879f9;
+  --color-brand: #5b45e0;
+  --color-brand-soft: #efecff;
+  --color-brand-deep: #4733c4;
+  --color-accent: #e07a3f;
 
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
@@ -39,7 +47,12 @@ body {
   min-height: 100svh;
 }
 
-/* Ambient glow used behind hero sections and empty states. */
+/* Respect the phone's notch/home indicator — the bottom tab bar sits in it. */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Warm wash behind hero sections. Kept very light so text stays readable. */
 .aura {
   position: relative;
   isolation: isolate;
@@ -47,23 +60,23 @@ body {
 .aura::before {
   content: '';
   position: absolute;
-  inset: -20% 10% auto 10%;
-  height: 60%;
+  inset: -30% 5% auto 5%;
+  height: 70%;
   z-index: -1;
-  background: radial-gradient(60% 60% at 50% 0%, rgba(124, 92, 255, 0.28), transparent 70%),
-    radial-gradient(40% 50% at 80% 10%, rgba(232, 121, 249, 0.18), transparent 70%);
-  filter: blur(40px);
+  background: radial-gradient(55% 60% at 50% 0%, rgba(91, 69, 224, 0.13), transparent 70%),
+    radial-gradient(45% 50% at 85% 15%, rgba(224, 122, 63, 0.1), transparent 70%);
+  filter: blur(38px);
   pointer-events: none;
 }
 
 .gradient-text {
-  background: linear-gradient(100deg, #a78bfa 0%, #e879f9 55%, #818cf8 100%);
+  background: linear-gradient(100deg, #5b45e0 0%, #8b5cf6 45%, #e07a3f 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-/* Subtle grid used on the landing hero.
+/* Faint grid on the landing hero.
    The mask lives on a pseudo-element, not the section itself: masking the
    element would fade out its children (the headline and CTA) along with the
    grid. */
@@ -76,8 +89,8 @@ body {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(28, 26, 23, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(28, 26, 23, 0.045) 1px, transparent 1px);
   background-size: 56px 56px;
   -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%);
   mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%);
@@ -115,20 +128,20 @@ body {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+  background: linear-gradient(90deg, transparent, rgba(28, 26, 23, 0.06), transparent);
   animation: shimmer 1.6s infinite;
 }
 
-/* Scrollbars that don't break the dark canvas. */
+/* Scrollbars tinted to the canvas rather than the browser default grey. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-line) transparent;
+  scrollbar-color: var(--color-line-strong) transparent;
 }
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 *::-webkit-scrollbar-thumb {
-  background: var(--color-line);
+  background: var(--color-line-strong);
   border-radius: 999px;
 }

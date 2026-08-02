@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
+import { Icon } from '../components/icons';
 import { paymentApi } from '../api/payment.api';
 import { useAuth } from '../context/AuthContext';
+import { Button, Card, Badge, Spinner, cx } from '../components/ui';
 
 export default function Billing() {
   const { credits } = useAuth();
@@ -14,7 +16,7 @@ export default function Billing() {
     paymentApi
       .getPackages()
       .then((res) => setPackages(res.data.data))
-      .catch(() => setError('Kredit paketlarini yuklab bo\'lmadi.'))
+      .catch(() => setError("Kredit paketlarini yuklab bo'lmadi."))
       .finally(() => setLoading(false));
   }, []);
 
@@ -30,38 +32,75 @@ export default function Billing() {
     }
   };
 
+  // The middle package is the one most people should pick, so it is the one
+  // the eye lands on.
+  const highlightIndex = packages.length > 1 ? 1 : 0;
+
   return (
-    <Layout>
-      <div className="mx-auto max-w-3xl">
-        <h1 className="text-2xl font-bold text-white">Kredit sotib olish</h1>
-        <p className="mt-1 text-zinc-500">
-          Joriy balansingiz: <span className="font-semibold text-violet-400">💎 {credits} kredit</span>
-        </p>
+    <Layout title="Kredit sotib olish" back="/profile">
+      <Card className="flex items-center gap-4 p-5">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#efecff] text-[#5b45e0]">
+          <Icon name="credit" size="lg" />
+        </span>
+        <div>
+          <p className="text-sm text-[#6d655a]">Joriy balans</p>
+          <p className="text-2xl font-semibold text-[#1c1a17]">{credits} kredit</p>
+        </div>
+      </Card>
 
-        {error && <div className="mt-4 rounded-lg bg-red-500/10 px-4 py-2 text-sm text-red-300">{error}</div>}
+      {error && (
+        <div className="mt-4 rounded-xl bg-[#fbeceb] px-4 py-3 text-sm text-[#a8352a]">{error}</div>
+      )}
 
-        {loading ? (
-          <p className="mt-8 text-zinc-500">Yuklanmoqda...</p>
-        ) : (
-          <div className="mt-8 grid gap-6 sm:grid-cols-3">
-            {packages.map((pkg) => (
-              <div key={pkg.id} className="flex flex-col rounded-2xl bg-[#101018] p-6 text-center shadow">
-                <h2 className="text-lg font-bold text-white">{pkg.name}</h2>
-                <p className="mt-2 text-3xl font-extrabold text-violet-400">{pkg.credits}</p>
-                <p className="text-sm text-zinc-500">kredit</p>
-                <p className="mt-4 text-xl font-semibold text-white">${pkg.priceUsd}</p>
-                <button
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <Spinner size="lg" />
+        </div>
+      ) : (
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          {packages.map((pkg, index) => {
+            const highlighted = index === highlightIndex;
+            return (
+              <Card
+                key={pkg.id}
+                className={cx(
+                  'flex flex-col p-5 text-center',
+                  highlighted && 'border-[#5b45e0] ring-1 ring-[#5b45e0]'
+                )}
+              >
+                {highlighted && (
+                  <Badge tone="brand" className="mx-auto mb-2.5">
+                    Ommabop
+                  </Badge>
+                )}
+                <h2 className="font-medium text-[#1c1a17]">{pkg.name}</h2>
+                <p className="mt-3 text-3xl font-semibold text-[#5b45e0]">{pkg.credits}</p>
+                <p className="text-sm text-[#a1978a]">kredit</p>
+                <p className="mt-3 text-xl font-semibold text-[#1c1a17]">${pkg.priceUsd}</p>
+                <Button
                   onClick={() => handlePurchase(pkg.id)}
                   disabled={purchasingId === pkg.id}
-                  className="mt-6 rounded-lg bg-violet-600 py-2.5 font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
+                  variant={highlighted ? 'primary' : 'secondary'}
+                  className="mt-5 w-full"
+                  icon="card"
                 >
                   {purchasingId === pkg.id ? "O'tilmoqda..." : 'Sotib olish'}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+                </Button>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <Card className="mt-5 flex items-start gap-3 bg-[#f4efe6] p-4">
+        <span className="mt-0.5 shrink-0 text-[#a1978a]">
+          <Icon name="info" size="md" />
+        </span>
+        <p className="text-sm text-[#6d655a]">
+          Bitta rasm 2 kredit, video esa sifat darajasiga qarab 8 dan 60 kreditgacha turadi.
+          Kreditlar muddatsiz — yonib ketmaydi.
+        </p>
+      </Card>
     </Layout>
   );
 }

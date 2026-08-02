@@ -65,8 +65,8 @@ export default function AdminAnnouncements() {
 
   return (
     <AdminLayout>
-      <h1 className="text-2xl font-bold text-white">E'lonlar</h1>
-      <p className="mt-1 text-sm text-gray-400">
+      <h1 className="text-2xl font-bold text-[#1c1a17]">E'lonlar</h1>
+      <p className="mt-1 text-sm text-[#6d655a]">
         Faol e'lonlar barcha foydalanuvchilarga dashboard tepasida banner sifatida ko'rsatiladi.
       </p>
 
@@ -75,34 +75,34 @@ export default function AdminAnnouncements() {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="E'lon matni..."
-          className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white placeholder-gray-500 focus:border-indigo-500 focus:outline-none"
+          className="w-full rounded-lg border border-[#e8e0d3] bg-white px-3 py-2 text-[#1c1a17] placeholder-[#a1978a] focus:border-[#5b45e0] focus:outline-none"
         />
         <button
           type="submit"
           disabled={busy || !message.trim()}
-          className="shrink-0 rounded-lg bg-indigo-600 px-5 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+          className="shrink-0 rounded-lg bg-[#5b45e0] px-5 py-2 font-medium text-[#1c1a17] hover:bg-[#4733c4] disabled:opacity-50"
         >
           Qo'shish
         </button>
       </form>
 
       <div className="mt-8 space-y-3">
-        {loading && <p className="text-gray-500">Yuklanmoqda...</p>}
-        {!loading && items.length === 0 && <p className="text-gray-500">Hali e'lon yo'q.</p>}
+        {loading && <p className="text-[#a1978a]">Yuklanmoqda...</p>}
+        {!loading && items.length === 0 && <p className="text-[#a1978a]">Hali e'lon yo'q.</p>}
 
         {items.map((item) => (
           <div
             key={item.id}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gray-800 px-4 py-3"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#e8e0d3] bg-white px-4 py-3"
           >
             <div className="min-w-0 flex-1">
-              <p className="text-gray-100">{item.message}</p>
-              <p className="mt-0.5 text-xs text-gray-500">
+              <p className="text-[#1c1a17]">{item.message}</p>
+              <p className="mt-0.5 text-xs text-[#a1978a]">
                 {new Date(item.createdAt).toLocaleString()} ·{' '}
                 {item.isActive ? (
-                  <span className="text-green-400">Faol</span>
+                  <span className="text-[#1f7a45]">Faol</span>
                 ) : (
-                  <span className="text-gray-500">O'chirilgan</span>
+                  <span className="text-[#a1978a]">O'chirilgan</span>
                 )}
               </p>
             </div>
@@ -110,14 +110,14 @@ export default function AdminAnnouncements() {
               <button
                 onClick={() => toggle(item)}
                 disabled={busy}
-                className="rounded-lg border border-gray-600 px-3 py-1.5 text-xs hover:bg-gray-700 disabled:opacity-50"
+                className="rounded-lg border border-[#e8e0d3] px-3 py-1.5 text-xs hover:bg-[#faf7f1] disabled:opacity-50"
               >
                 {item.isActive ? "O'chirish" : 'Yoqish'}
               </button>
               <button
                 onClick={() => remove(item)}
                 disabled={busy}
-                className="rounded-lg border border-red-800 px-3 py-1.5 text-xs text-red-400 hover:bg-red-950 disabled:opacity-50"
+                className="rounded-lg border border-red-800 px-3 py-1.5 text-xs text-[#a8352a] hover:bg-red-950 disabled:opacity-50"
               >
                 Olib tashlash
               </button>

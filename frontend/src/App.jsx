@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -9,19 +9,19 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-import Gallery from './pages/Gallery';
 import Dashboard from './pages/Dashboard';
+import Create from './pages/Create';
+import Library from './pages/Library';
+import Profile from './pages/Profile';
+import Magic from './pages/Magic';
+import Remix from './pages/Remix';
 import GenerateImage from './pages/GenerateImage';
 import GenerateVideo from './pages/GenerateVideo';
+import ProjectDetail from './pages/ProjectDetail';
 import Billing from './pages/Billing';
 import BillingSuccess from './pages/BillingSuccess';
 import BillingCancel from './pages/BillingCancel';
-import History from './pages/History';
 import Settings from './pages/Settings';
-import Magic from './pages/Magic';
-import Remix from './pages/Remix';
-import Projects from './pages/Projects';
-import ProjectDetail from './pages/ProjectDetail';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminGenerations from './pages/admin/AdminGenerations';
@@ -30,17 +30,31 @@ import AdminAnnouncements from './pages/admin/AdminAnnouncements';
 import AdminProviders from './pages/admin/AdminProviders';
 import AdminEconomics from './pages/admin/AdminEconomics';
 
+/**
+ * Four tabs carry the whole app: Bosh, Yaratish, Ishlarim, Profil. Everything
+ * else is a sub-page opened from one of them, which is why the generators and
+ * settings are listed here but never appear in the tab bar.
+ */
 const protectedRoutes = [
+  { path: '/dashboard', element: <Dashboard /> },
+  { path: '/create', element: <Create /> },
+  { path: '/library', element: <Library /> },
+  { path: '/profile', element: <Profile /> },
+
   { path: '/magic', element: <Magic /> },
   { path: '/remix', element: <Remix /> },
-  { path: '/projects', element: <Projects /> },
-  { path: '/projects/:id', element: <ProjectDetail /> },
-  { path: '/dashboard', element: <Dashboard /> },
   { path: '/generate/image', element: <GenerateImage /> },
   { path: '/generate/video', element: <GenerateVideo /> },
+  { path: '/projects/:id', element: <ProjectDetail /> },
   { path: '/billing', element: <Billing /> },
-  { path: '/history', element: <History /> },
   { path: '/settings', element: <Settings /> },
+];
+
+/** Old top-level destinations now live inside the Ishlarim tab. */
+const redirects = [
+  { from: '/projects', to: '/library' },
+  { from: '/history', to: '/library?view=history' },
+  { from: '/gallery', to: '/library?view=gallery' },
 ];
 
 const adminRoutes = [
@@ -64,9 +78,12 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/gallery" element={<Gallery />} />
             <Route path="/billing/success" element={<BillingSuccess />} />
             <Route path="/billing/cancel" element={<BillingCancel />} />
+
+            {redirects.map(({ from, to }) => (
+              <Route key={from} path={from} element={<Navigate to={to} replace />} />
+            ))}
 
             {protectedRoutes.map(({ path, element }) => (
               <Route key={path} path={path} element={<ProtectedRoute>{element}</ProtectedRoute>} />

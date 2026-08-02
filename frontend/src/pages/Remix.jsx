@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
+import { Icon } from '../components/icons';
 import { remixApi } from '../api/remix.api';
 import { generationApi } from '../api/generation.api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { Button, Card, Badge, Spinner, cx } from '../components/ui';
+import { Button, Card, Badge, Spinner, CreditPill, cx } from '../components/ui';
 
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -47,7 +48,7 @@ export default function Remix() {
       return;
     }
     if (selected.size > MAX_FILE_BYTES) {
-      setError("Rasm hajmi 8MB dan oshmasligi kerak.");
+      setError('Rasm hajmi 8MB dan oshmasligi kerak.');
       return;
     }
 
@@ -99,143 +100,157 @@ export default function Remix() {
   const notEnough = cost > credits;
 
   return (
-    <Layout>
-      <div className="mx-auto max-w-2xl">
-        <Badge tone="brand">🔁 Remix</Badge>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white">
-          Rasmni bir bosishda o'zgartiring
-        </h1>
-        <p className="mt-1.5 text-zinc-400">Rasm yuklang, uslubni tanlang — AI uni qayta chizadi.</p>
+    <Layout title="Remix" back="/create">
+      {!result && !submitting && (
+        <div className="space-y-6">
+          <p className="text-[#6d655a]">Rasm yuklang, uslubni tanlang — AI uni qayta chizadi.</p>
 
-        {!result && (
-          <div className="mt-8 space-y-6">
-            {!previewUrl ? (
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className="flex aspect-video cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/15 bg-white/4 text-center transition-colors hover:border-violet-500/50"
+          {!previewUrl ? (
+            <button
+              type="button"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#d8cdba] bg-white text-center transition-colors hover:border-[#5b45e0] hover:bg-[#faf7f1]"
+            >
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f4efe6] text-[#5b45e0]">
+                <Icon name="upload" size="lg" />
+              </span>
+              <p className="mt-3 font-medium text-[#37322b]">Rasmni tashlang yoki bosing</p>
+              <p className="mt-1 text-xs text-[#a1978a]">JPEG, PNG yoki WEBP · 8MB gacha</p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => pickFile(e.target.files?.[0])}
+              />
+            </button>
+          ) : (
+            <div className="relative overflow-hidden rounded-2xl">
+              <img src={previewUrl} alt="Tanlangan rasm" className="w-full bg-[#f4efe6]" />
+              <button
+                onClick={reset}
+                className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-[#37322b] shadow-sm transition-colors hover:bg-white"
               >
-                <span className="text-4xl">📤</span>
-                <p className="mt-3 text-zinc-300">Rasmni bu yerga tashlang yoki bosing</p>
-                <p className="mt-1 text-xs text-zinc-600">JPEG, PNG yoki WEBP · 8MB gacha</p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={(e) => pickFile(e.target.files?.[0])}
+                <Icon name="refresh" size="xs" />
+                Almashtirish
+              </button>
+            </div>
+          )}
+
+          {error && (
+            <div className="rounded-xl bg-[#fbeceb] px-4 py-3 text-sm text-[#a8352a]">{error}</div>
+          )}
+
+          {styles.length > 0 && (
+            <div>
+              <p className="mb-2.5 text-sm font-medium text-[#37322b]">Uslub tanlang</p>
+              <div className="grid grid-cols-3 gap-2.5">
+                {styles.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setStyle(s.id)}
+                    disabled={submitting}
+                    className={cx(
+                      'flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-sm transition-colors disabled:opacity-50',
+                      style === s.id
+                        ? 'border-[#5b45e0] bg-[#efecff] font-medium text-[#4733c4]'
+                        : 'border-[#e8e0d3] bg-white text-[#6d655a] hover:border-[#d8cdba]'
+                    )}
+                  >
+                    <Icon name={s.icon || 'palette'} size="md" />
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-2 text-sm text-[#6d655a]">
+              Narx
+              <CreditPill amount={cost} tone={notEnough ? 'danger' : 'neutral'} />
+            </span>
+            <Button
+              onClick={handleSubmit}
+              disabled={!file || !style || submitting || notEnough}
+              icon="remix"
+            >
+              Remix qilish
+            </Button>
+          </div>
+
+          {notEnough && (
+            <p className="text-center text-sm text-[#a8352a]">
+              Kreditingiz yetarli emas.{' '}
+              <Link to="/billing" className="font-medium underline">
+                Kredit sotib olish
+              </Link>
+            </p>
+          )}
+        </div>
+      )}
+
+      {submitting && (
+        <Card className="flex flex-col items-center gap-3 p-14">
+          <Spinner size="lg" />
+          <p className="text-[#6d655a]">AI rasmni qayta chizmoqda...</p>
+        </Card>
+      )}
+
+      {result?.status === 'COMPLETED' && (
+        <div className="space-y-4">
+          {previewUrl && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="mb-1.5 text-xs font-medium text-[#a1978a]">Oldin</p>
+                <img src={previewUrl} alt="Original" className="w-full rounded-xl bg-[#f4efe6]" />
+              </div>
+              <div>
+                <p className="mb-1.5 text-xs font-medium text-[#5b45e0]">Keyin</p>
+                <img
+                  src={result.resultUrl}
+                  alt="Remix natijasi"
+                  className="w-full rounded-xl bg-[#f4efe6]"
                 />
               </div>
-            ) : (
-              <div className="relative">
-                <img src={previewUrl} alt="Tanlangan rasm" className="w-full rounded-2xl" />
-                <button
-                  onClick={reset}
-                  className="absolute right-3 top-3 rounded-full bg-black/60 px-3 py-1.5 text-xs text-white hover:bg-black/80"
-                >
-                  Almashtirish
-                </button>
-              </div>
-            )}
-
-            {error && (
-              <div className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</div>
-            )}
-
-            {styles.length > 0 && (
-              <div>
-                <p className="mb-2 text-sm font-medium text-zinc-300">Uslub tanlang</p>
-                <div className="flex flex-wrap gap-2">
-                  {styles.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => setStyle(s.id)}
-                      disabled={submitting}
-                      className={cx(
-                        'rounded-full border px-4 py-2 text-sm transition-colors disabled:opacity-50',
-                        style === s.id
-                          ? 'border-violet-500 bg-violet-500/15 text-white'
-                          : 'border-white/10 bg-white/4 text-zinc-400 hover:border-white/20'
-                      )}
-                    >
-                      {s.emoji} {s.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-zinc-500">
-                Narx: <span className={notEnough ? 'text-red-400' : 'text-zinc-300'}>◆ {cost}</span>
-              </span>
-              <Button onClick={handleSubmit} disabled={!file || !style || submitting || notEnough}>
-                {submitting ? 'Yaratilmoqda...' : 'Remix qilish'}
-              </Button>
             </div>
-
-            {notEnough && (
-              <p className="text-center text-sm text-red-300">
-                Kreditingiz yetarli emas.{' '}
-                <Link to="/billing" className="underline">
-                  Kredit sotib olish
-                </Link>
-              </p>
-            )}
-          </div>
-        )}
-
-        {submitting && (
-          <Card className="mt-8 flex flex-col items-center gap-3 p-12">
-            <Spinner size="lg" />
-            <p className="text-zinc-400">AI rasmni qayta chizmoqda...</p>
-          </Card>
-        )}
-
-        {result?.status === 'COMPLETED' && (
-          <div className="mt-8 space-y-4">
-            {previewUrl && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="mb-1 text-xs text-zinc-500">Oldin</p>
-                  <img src={previewUrl} alt="Original" className="w-full rounded-xl" />
-                </div>
-                <div>
-                  <p className="mb-1 text-xs text-zinc-500">Keyin</p>
-                  <img src={result.resultUrl} alt="Remix natijasi" className="w-full rounded-xl" />
-                </div>
-              </div>
-            )}
-            <div className="flex gap-3">
-              <Button
-                className="flex-1"
-                onClick={() =>
-                  generationApi
-                    .download(result.id, `remix-${result.id}.png`)
-                    .catch(() => toast.error('Yuklab olishda xatolik.'))
-                }
-              >
-                Yuklab olish
-              </Button>
-              <Button onClick={reset} variant="secondary" className="flex-1">
-                Yana remix qilish
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {result?.status === 'FAILED' && (
-          <Card className="mt-8 p-6 text-center">
-            <Badge tone="danger">Xato</Badge>
-            <p className="mt-3 text-zinc-300">{result.errorMessage}</p>
-            <Button onClick={reset} variant="secondary" className="mt-5">
-              Qaytadan urinish
+          )}
+          <div className="flex gap-3">
+            <Button
+              className="flex-1"
+              icon="download"
+              onClick={() =>
+                generationApi
+                  .download(result.id, `remix-${result.id}.png`)
+                  .catch(() => toast.error('Yuklab olishda xatolik.'))
+              }
+            >
+              Yuklab olish
             </Button>
-          </Card>
-        )}
-      </div>
+            <Button onClick={reset} variant="secondary" className="flex-1" icon="refresh">
+              Yana remix
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {result?.status === 'FAILED' && (
+        <Card className="p-6 text-center">
+          <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fbeceb] text-[#a8352a]">
+            <Icon name="alert" size="lg" />
+          </span>
+          <Badge tone="danger" className="mt-3">
+            Xato
+          </Badge>
+          <p className="mt-3 text-[#37322b]">{result.errorMessage}</p>
+          <Button onClick={reset} variant="secondary" className="mt-5" icon="refresh">
+            Qaytadan urinish
+          </Button>
+        </Card>
+      )}
     </Layout>
   );
 }

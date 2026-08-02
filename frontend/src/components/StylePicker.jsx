@@ -1,9 +1,12 @@
-export default function StylePicker({ styles, value, onChange, disabled }) {
+import { Icon } from './icons';
+import { cx } from './ui';
+
+export default function StylePicker({ styles, value, onChange, disabled, label = 'Uslub' }) {
   if (!styles || styles.length === 0) return null;
 
   return (
     <div>
-      <p className="mb-2 text-sm font-medium text-zinc-300">Uslub tanlang</p>
+      <p className="mb-2.5 text-sm font-medium text-[#37322b]">{label}</p>
       <div className="flex flex-wrap gap-2">
         {styles.map((style) => {
           const selected = value === style.id;
@@ -13,13 +16,15 @@ export default function StylePicker({ styles, value, onChange, disabled }) {
               type="button"
               disabled={disabled}
               onClick={() => onChange(style.id)}
-              className={`rounded-full border px-3 py-1.5 text-sm transition disabled:opacity-50 ${
+              className={cx(
+                'inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm transition-colors disabled:opacity-50',
                 selected
-                  ? 'border-indigo-600 bg-violet-600 text-white'
-                  : 'border-white/10 bg-[#101018] text-zinc-300 hover:border-indigo-400'
-              }`}
+                  ? 'border-[#5b45e0] bg-[#efecff] font-medium text-[#4733c4]'
+                  : 'border-[#e8e0d3] bg-white text-[#6d655a] hover:border-[#d8cdba] hover:text-[#1c1a17]'
+              )}
             >
-              {style.emoji} {style.label}
+              <Icon name={style.icon || 'sparkle'} size="sm" />
+              {style.label}
             </button>
           );
         })}

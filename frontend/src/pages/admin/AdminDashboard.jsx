@@ -4,10 +4,10 @@ import { adminApi } from '../../api/admin.api';
 
 function StatCard({ label, value, hint }) {
   return (
-    <div className="rounded-xl bg-gray-800 p-5">
-      <p className="text-sm text-gray-400">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-white">{value}</p>
-      {hint && <p className="mt-0.5 text-xs text-gray-500">{hint}</p>}
+    <div className="rounded-xl border border-[#e8e0d3] bg-white p-5">
+      <p className="text-sm text-[#6d655a]">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-[#1c1a17]">{value}</p>
+      {hint && <p className="mt-0.5 text-xs text-[#a1978a]">{hint}</p>}
     </div>
   );
 }
@@ -19,8 +19,8 @@ function TrendChart({ title, series, color }) {
   const max = Math.max(...series.map((point) => point.count), 1);
 
   return (
-    <div className="rounded-xl bg-gray-800 p-5">
-      <h2 className="mb-4 font-semibold text-white">{title}</h2>
+    <div className="rounded-xl border border-[#e8e0d3] bg-white p-5">
+      <h2 className="mb-4 font-semibold text-[#1c1a17]">{title}</h2>
       <div className="flex gap-2">
         {series.map((point) => {
           // Heights are computed in pixels rather than percentages: a
@@ -30,18 +30,18 @@ function TrendChart({ title, series, color }) {
 
           return (
             <div key={point.date} className="flex flex-1 flex-col items-center">
-              <span className="mb-1 text-[10px] text-gray-400">{point.count || ''}</span>
+              <span className="mb-1 text-[10px] text-[#6d655a]">{point.count || ''}</span>
               <div
                 className="flex w-full items-end"
                 style={{ height: `${PLOT_HEIGHT_PX}px` }}
                 title={`${point.date}: ${point.count}`}
               >
                 <div
-                  className={`w-full rounded-t ${point.count === 0 ? 'bg-gray-700' : color}`}
+                  className={`w-full rounded-t ${point.count === 0 ? 'bg-[#f4efe6]' : color}`}
                   style={{ height: `${barHeight}px` }}
                 />
               </div>
-              <span className="mt-1 text-[10px] text-gray-500">{point.date.slice(5)}</span>
+              <span className="mt-1 text-[10px] text-[#a1978a]">{point.date.slice(5)}</span>
             </div>
           );
         })}
@@ -65,10 +65,10 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout>
-      <h1 className="text-2xl font-bold text-white">Statistika</h1>
+      <h1 className="text-2xl font-bold text-[#1c1a17]">Statistika</h1>
 
-      {loading && <p className="mt-6 text-gray-400">Yuklanmoqda...</p>}
-      {error && <p className="mt-6 text-red-400">{error}</p>}
+      {loading && <p className="mt-6 text-[#6d655a]">Yuklanmoqda...</p>}
+      {error && <p className="mt-6 text-[#a8352a]">{error}</p>}
 
       {stats && (
         <>
@@ -99,38 +99,38 @@ export default function AdminDashboard() {
             <TrendChart
               title="Yangi foydalanuvchilar (7 kun)"
               series={stats.trend.signups}
-              color="bg-indigo-500"
+              color="bg-[#5b45e0]"
             />
             <TrendChart
               title="Generatsiyalar (7 kun)"
               series={stats.trend.generations}
-              color="bg-pink-500"
+              color="bg-[#e07a3f]"
             />
           </div>
 
           <div className="mt-8 grid gap-6 sm:grid-cols-2">
-            <div className="rounded-xl bg-gray-800 p-5">
-              <h2 className="mb-3 font-semibold text-white">Turi bo'yicha</h2>
+            <div className="rounded-xl border border-[#e8e0d3] bg-white p-5">
+              <h2 className="mb-3 font-semibold text-[#1c1a17]">Turi bo'yicha</h2>
               {Object.entries(stats.generationsByType).length === 0 && (
-                <p className="text-sm text-gray-500">Hali ma'lumot yo'q</p>
+                <p className="text-sm text-[#a1978a]">Hali ma'lumot yo'q</p>
               )}
               {Object.entries(stats.generationsByType).map(([type, count]) => (
-                <div key={type} className="flex justify-between border-b border-gray-700 py-2 text-sm">
-                  <span className="text-gray-300">{type}</span>
-                  <span className="font-medium text-white">{count}</span>
+                <div key={type} className="flex justify-between border-b border-[#e8e0d3] py-2 text-sm">
+                  <span className="text-[#37322b]">{type}</span>
+                  <span className="font-medium text-[#1c1a17]">{count}</span>
                 </div>
               ))}
             </div>
 
-            <div className="rounded-xl bg-gray-800 p-5">
-              <h2 className="mb-3 font-semibold text-white">Holat bo'yicha</h2>
+            <div className="rounded-xl border border-[#e8e0d3] bg-white p-5">
+              <h2 className="mb-3 font-semibold text-[#1c1a17]">Holat bo'yicha</h2>
               {Object.entries(stats.generationsByStatus).length === 0 && (
-                <p className="text-sm text-gray-500">Hali ma'lumot yo'q</p>
+                <p className="text-sm text-[#a1978a]">Hali ma'lumot yo'q</p>
               )}
               {Object.entries(stats.generationsByStatus).map(([status, count]) => (
-                <div key={status} className="flex justify-between border-b border-gray-700 py-2 text-sm">
-                  <span className="text-gray-300">{status}</span>
-                  <span className="font-medium text-white">{count}</span>
+                <div key={status} className="flex justify-between border-b border-[#e8e0d3] py-2 text-sm">
+                  <span className="text-[#37322b]">{status}</span>
+                  <span className="font-medium text-[#1c1a17]">{count}</span>
                 </div>
               ))}
             </div>

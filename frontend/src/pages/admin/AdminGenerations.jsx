@@ -32,13 +32,13 @@ export default function AdminGenerations() {
 
   return (
     <AdminLayout>
-      <h1 className="text-2xl font-bold text-white">Barcha generatsiyalar</h1>
+      <h1 className="text-2xl font-bold text-[#1c1a17]">Barcha generatsiyalar</h1>
 
       <div className="mt-4 flex flex-wrap gap-3">
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
-          className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white"
+          className="rounded-lg border border-[#e8e0d3] bg-white px-3 py-2 text-sm text-[#1c1a17]"
         >
           {TYPE_OPTIONS.map((opt) => (
             <option key={opt} value={opt}>
@@ -49,7 +49,7 @@ export default function AdminGenerations() {
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white"
+          className="rounded-lg border border-[#e8e0d3] bg-white px-3 py-2 text-sm text-[#1c1a17]"
         >
           {STATUS_OPTIONS.map((opt) => (
             <option key={opt} value={opt}>
@@ -59,10 +59,10 @@ export default function AdminGenerations() {
         </select>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-xl bg-gray-800">
+      <div className="mt-6 overflow-x-auto rounded-xl border border-[#e8e0d3] bg-white">
         <table className="w-full text-left text-sm">
-          <thead className="text-gray-400">
-            <tr className="border-b border-gray-700">
+          <thead className="text-[#6d655a]">
+            <tr className="border-b border-[#e8e0d3]">
               <th className="px-4 py-3">Foydalanuvchi</th>
               <th className="px-4 py-3">Turi</th>
               <th className="px-4 py-3">So'rov</th>
@@ -73,7 +73,7 @@ export default function AdminGenerations() {
           </thead>
           <tbody>
             {items.map((g) => (
-              <tr key={g.id} className="border-b border-gray-700 text-gray-200">
+              <tr key={g.id} className="border-b border-[#e8e0d3] text-[#37322b]">
                 <td className="px-4 py-3">{g.user?.email}</td>
                 <td className="px-4 py-3">{g.type}</td>
                 <td className="max-w-xs truncate px-4 py-3">{g.userPrompt}</td>
@@ -84,16 +84,16 @@ export default function AdminGenerations() {
             ))}
           </tbody>
         </table>
-        {loading && <p className="p-4 text-gray-500">Yuklanmoqda...</p>}
-        {!loading && items.length === 0 && <p className="p-4 text-gray-500">Hech narsa topilmadi.</p>}
+        {loading && <p className="p-4 text-[#a1978a]">Yuklanmoqda...</p>}
+        {!loading && items.length === 0 && <p className="p-4 text-[#a1978a]">Hech narsa topilmadi.</p>}
       </div>
 
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center gap-3 text-sm text-gray-400">
+        <div className="mt-4 flex items-center gap-3 text-sm text-[#6d655a]">
           <button
             disabled={page <= 1}
             onClick={() => load(page - 1)}
-            className="rounded-lg border border-gray-700 px-3 py-1.5 disabled:opacity-40"
+            className="rounded-lg border border-[#e8e0d3] px-3 py-1.5 disabled:opacity-40"
           >
             Oldingi
           </button>
@@ -103,7 +103,7 @@ export default function AdminGenerations() {
           <button
             disabled={page >= totalPages}
             onClick={() => load(page + 1)}
-            className="rounded-lg border border-gray-700 px-3 py-1.5 disabled:opacity-40"
+            className="rounded-lg border border-[#e8e0d3] px-3 py-1.5 disabled:opacity-40"
           >
             Keyingi
           </button>

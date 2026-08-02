@@ -77,7 +77,7 @@ const listModules = asyncHandler(async (req, res) => {
     data: selection.map((entry) => ({
       ...entry,
       label: MODULES[entry.module].label,
-      emoji: MODULES[entry.module].emoji,
+      icon: MODULES[entry.module].icon,
       credits: MODULES[entry.module].credits,
       providerLabel: entry.label,
     })),

@@ -60,12 +60,12 @@ export default function AdminPackages() {
 
   return (
     <AdminLayout>
-      <h1 className="text-2xl font-bold text-white">Kredit paketlari</h1>
+      <h1 className="text-2xl font-bold text-[#1c1a17]">Kredit paketlari</h1>
 
-      <div className="mt-6 overflow-x-auto rounded-xl bg-gray-800">
+      <div className="mt-6 overflow-x-auto rounded-xl border border-[#e8e0d3] bg-white">
         <table className="w-full text-left text-sm">
-          <thead className="text-gray-400">
-            <tr className="border-b border-gray-700">
+          <thead className="text-[#6d655a]">
+            <tr className="border-b border-[#e8e0d3]">
               <th className="px-4 py-3">Nomi</th>
               <th className="px-4 py-3">Kredit</th>
               <th className="px-4 py-3">Narx</th>
@@ -76,23 +76,23 @@ export default function AdminPackages() {
           </thead>
           <tbody>
             {packages.map((pkg) => (
-              <tr key={pkg.id} className="border-b border-gray-700 text-gray-200">
+              <tr key={pkg.id} className="border-b border-[#e8e0d3] text-[#37322b]">
                 <td className="px-4 py-3">{pkg.name}</td>
                 <td className="px-4 py-3">{pkg.credits}</td>
                 <td className="px-4 py-3">${pkg.priceUsd}</td>
-                <td className="px-4 py-3 text-xs text-gray-400">{pkg.stripePriceId}</td>
+                <td className="px-4 py-3 text-xs text-[#6d655a]">{pkg.stripePriceId}</td>
                 <td className="px-4 py-3">
                   {pkg.isActive ? (
-                    <span className="text-green-400">Faol</span>
+                    <span className="text-[#1f7a45]">Faol</span>
                   ) : (
-                    <span className="text-gray-500">O'chirilgan</span>
+                    <span className="text-[#a1978a]">O'chirilgan</span>
                   )}
                 </td>
                 <td className="px-4 py-3">
                   <button
                     onClick={() => toggleActive(pkg)}
                     disabled={busyId === pkg.id}
-                    className="rounded-lg border border-gray-600 px-3 py-1 text-xs hover:bg-gray-700 disabled:opacity-50"
+                    className="rounded-lg border border-[#e8e0d3] px-3 py-1 text-xs hover:bg-[#faf7f1] disabled:opacity-50"
                   >
                     {pkg.isActive ? "O'chirish" : 'Yoqish'}
                   </button>
@@ -101,18 +101,18 @@ export default function AdminPackages() {
             ))}
           </tbody>
         </table>
-        {loading && <p className="p-4 text-gray-500">Yuklanmoqda...</p>}
+        {loading && <p className="p-4 text-[#a1978a]">Yuklanmoqda...</p>}
       </div>
 
-      <form onSubmit={handleCreate} className="mt-8 max-w-lg space-y-3 rounded-xl bg-gray-800 p-5">
-        <h2 className="font-semibold text-white">Yangi paket qo'shish</h2>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+      <form onSubmit={handleCreate} className="mt-8 max-w-lg space-y-3 rounded-xl border border-[#e8e0d3] bg-white p-5">
+        <h2 className="font-semibold text-[#1c1a17]">Yangi paket qo'shish</h2>
+        {error && <p className="text-sm text-[#a8352a]">{error}</p>}
         <input
           required
           value={form.name}
           onChange={update('name')}
           placeholder="Nomi (masalan Mega)"
-          className="w-full rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white"
+          className="w-full rounded-lg border border-[#e8e0d3] bg-[#faf7f1] px-3 py-2 text-sm text-[#1c1a17]"
         />
         <div className="flex gap-3">
           <input
@@ -121,7 +121,7 @@ export default function AdminPackages() {
             value={form.credits}
             onChange={update('credits')}
             placeholder="Kredit soni"
-            className="w-1/2 rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="w-1/2 rounded-lg border border-[#e8e0d3] bg-[#faf7f1] px-3 py-2 text-sm text-[#1c1a17]"
           />
           <input
             required
@@ -130,7 +130,7 @@ export default function AdminPackages() {
             value={form.priceUsd}
             onChange={update('priceUsd')}
             placeholder="Narx (USD)"
-            className="w-1/2 rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white"
+            className="w-1/2 rounded-lg border border-[#e8e0d3] bg-[#faf7f1] px-3 py-2 text-sm text-[#1c1a17]"
           />
         </div>
         <input
@@ -138,12 +138,12 @@ export default function AdminPackages() {
           value={form.stripePriceId}
           onChange={update('stripePriceId')}
           placeholder="Stripe Price ID (price_...)"
-          className="w-full rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white"
+          className="w-full rounded-lg border border-[#e8e0d3] bg-[#faf7f1] px-3 py-2 text-sm text-[#1c1a17]"
         />
         <button
           type="submit"
           disabled={creating}
-          className="w-full rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+          className="w-full rounded-lg bg-[#5b45e0] py-2 text-sm font-medium text-[#1c1a17] hover:bg-[#4733c4] disabled:opacity-50"
         >
           {creating ? 'Yaratilmoqda...' : "Qo'shish"}
         </button>

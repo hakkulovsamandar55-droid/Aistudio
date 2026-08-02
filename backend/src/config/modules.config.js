@@ -14,7 +14,7 @@ const MODULES = {
   IMAGE: {
     id: 'IMAGE',
     label: 'Rasm',
-    emoji: '🖼️',
+    icon: 'image',
     credits: 2,
     // Which env var overrides the provider choice, and what to use by default.
     providerEnv: 'IMAGE_PROVIDER',
@@ -24,7 +24,7 @@ const MODULES = {
   VIDEO: {
     id: 'VIDEO',
     label: 'Video',
-    emoji: '🎬',
+    icon: 'video',
     credits: 20,
     providerEnv: 'VIDEO_PROVIDER',
     estimatedSeconds: 120,
@@ -32,7 +32,7 @@ const MODULES = {
   VOICE: {
     id: 'VOICE',
     label: 'Ovoz',
-    emoji: '🎙️',
+    icon: 'voice',
     credits: 3,
     providerEnv: 'VOICE_PROVIDER',
     estimatedSeconds: 20,
@@ -40,7 +40,7 @@ const MODULES = {
   MUSIC: {
     id: 'MUSIC',
     label: 'Musiqa',
-    emoji: '🎵',
+    icon: 'music',
     credits: 8,
     providerEnv: 'MUSIC_PROVIDER',
     estimatedSeconds: 60,
@@ -48,7 +48,7 @@ const MODULES = {
   SCRIPT: {
     id: 'SCRIPT',
     label: 'Matn / Ssenariy',
-    emoji: '📝',
+    icon: 'script',
     credits: 1,
     providerEnv: 'TEXT_PROVIDER',
     estimatedSeconds: 8,

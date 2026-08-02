@@ -3,6 +3,7 @@ import Layout from '../components/Layout';
 import { userApi } from '../api/user.api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { Button, Card, Input } from '../components/ui';
 
 export default function Settings() {
   const { user, refreshUser } = useAuth();
@@ -15,17 +16,9 @@ export default function Settings() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
 
-  const [referrals, setReferrals] = useState(null);
-  const [stats, setStats] = useState(null);
-
   useEffect(() => {
     setName(user?.name || '');
   }, [user?.name]);
-
-  useEffect(() => {
-    userApi.getReferrals().then((res) => setReferrals(res.data.data)).catch(() => {});
-    userApi.getStats().then((res) => setStats(res.data.data)).catch(() => {});
-  }, []);
 
   const saveName = async (e) => {
     e.preventDefault();
@@ -66,135 +59,63 @@ export default function Settings() {
     }
   };
 
-  const copyReferralLink = () => {
-    const link = `${window.location.origin}/register?ref=${referrals.referralCode}`;
-    navigator.clipboard
-      .writeText(link)
-      .then(() => toast.success('Havola nusxalandi'))
-      .catch(() => toast.error('Nusxalab bo\'lmadi'));
-  };
-
   return (
-    <Layout>
-      <div className="mx-auto max-w-2xl space-y-8">
-        <h1 className="text-2xl font-bold text-white">Sozlamalar</h1>
-
-        {stats && (
-          <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {[
-              { label: 'Generatsiyalar', value: stats.totalGenerations },
-              { label: 'Sevimlilar', value: stats.favorites },
-              { label: 'Ulashilgan', value: stats.shared },
-              { label: 'Sarflangan kredit', value: stats.creditsSpent },
-            ].map((card) => (
-              <div key={card.label} className="rounded-xl bg-[#101018] p-4 text-center shadow">
-                <p className="text-xl font-bold text-white">{card.value}</p>
-                <p className="mt-0.5 text-xs text-zinc-500">{card.label}</p>
-              </div>
-            ))}
-          </section>
-        )}
-
-        <section className="rounded-2xl bg-[#101018] p-6 shadow">
-          <h2 className="font-semibold text-white">Profil</h2>
-          <form onSubmit={saveName} className="mt-4 space-y-3">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-300">Email</label>
-              <input
-                value={user?.email || ''}
-                disabled
-                className="w-full rounded-lg border border-white/8 bg-[#08080c] px-3 py-2 text-zinc-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-zinc-300">Ism</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="w-full rounded-lg border border-white/10 bg-black/30 text-white placeholder:text-zinc-600 px-3 py-2 focus:border-violet-500 focus:outline-none"
-              />
-            </div>
-            <button
+    <Layout title="Sozlamalar" back="/profile">
+      <div className="space-y-5">
+        <Card className="p-5">
+          <h2 className="font-medium text-[#1c1a17]">Profil</h2>
+          <form onSubmit={saveName} className="mt-4 space-y-3.5">
+            <Input label="Email" value={user?.email || ''} disabled />
+            <Input
+              label="Ism"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+            <Button
               type="submit"
               disabled={savingName || !name.trim() || name.trim() === user?.name}
-              className="rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
+              icon="check"
             >
               {savingName ? 'Saqlanmoqda...' : 'Saqlash'}
-            </button>
+            </Button>
           </form>
-        </section>
+        </Card>
 
-        {referrals && (
-          <section className="rounded-2xl bg-[#101018] p-6 shadow">
-            <h2 className="font-semibold text-white">Do'stlarni taklif qiling</h2>
-            <p className="mt-1 text-sm text-zinc-500">
-              Har bir do'stingiz ro'yxatdan o'tganda siz {referrals.rewardPerReferral} kredit olasiz, do'stingiz esa
-              qo'shimcha bonus oladi.
-            </p>
-
-            <div className="mt-4 flex items-center gap-3">
-              <code className="rounded-lg bg-white/5 px-4 py-2 text-lg font-bold tracking-widest text-violet-300">
-                {referrals.referralCode}
-              </code>
-              <button
-                onClick={copyReferralLink}
-                className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-zinc-300 hover:bg-[#08080c]"
-              >
-                Havolani nusxalash
-              </button>
-            </div>
-
-            <div className="mt-4 flex gap-6 text-sm text-zinc-400">
-              <span>
-                Taklif qilinganlar: <strong>{referrals.referredCount}</strong>
-              </span>
-              <span>
-                Ishlangan kredit: <strong>{referrals.creditsEarned}</strong>
-              </span>
-            </div>
-          </section>
-        )}
-
-        <section className="rounded-2xl bg-[#101018] p-6 shadow">
-          <h2 className="font-semibold text-white">Parolni o'zgartirish</h2>
-          <form onSubmit={savePassword} className="mt-4 space-y-3">
+        <Card className="p-5">
+          <h2 className="font-medium text-[#1c1a17]">Parolni o'zgartirish</h2>
+          <form onSubmit={savePassword} className="mt-4 space-y-3.5">
             {passwordError && (
-              <div className="rounded-lg bg-red-500/10 px-4 py-2 text-sm text-red-300">{passwordError}</div>
+              <div className="rounded-xl bg-[#fbeceb] px-4 py-3 text-sm text-[#a8352a]">
+                {passwordError}
+              </div>
             )}
-            <input
+            <Input
               type="password"
               required
               value={passwords.current}
               onChange={(e) => setPasswords((p) => ({ ...p, current: e.target.value }))}
               placeholder="Joriy parol"
-              className="w-full rounded-lg border border-white/10 bg-black/30 text-white placeholder:text-zinc-600 px-3 py-2 focus:border-violet-500 focus:outline-none"
             />
-            <input
+            <Input
               type="password"
               required
               value={passwords.next}
               onChange={(e) => setPasswords((p) => ({ ...p, next: e.target.value }))}
               placeholder="Yangi parol (kamida 8 belgi)"
-              className="w-full rounded-lg border border-white/10 bg-black/30 text-white placeholder:text-zinc-600 px-3 py-2 focus:border-violet-500 focus:outline-none"
             />
-            <input
+            <Input
               type="password"
               required
               value={passwords.confirm}
               onChange={(e) => setPasswords((p) => ({ ...p, confirm: e.target.value }))}
               placeholder="Yangi parolni tasdiqlang"
-              className="w-full rounded-lg border border-white/10 bg-black/30 text-white placeholder:text-zinc-600 px-3 py-2 focus:border-violet-500 focus:outline-none"
             />
-            <button
-              type="submit"
-              disabled={savingPassword}
-              className="rounded-lg bg-violet-600 px-5 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
-            >
+            <Button type="submit" disabled={savingPassword} icon="lock">
               {savingPassword ? "O'zgartirilmoqda..." : "Parolni o'zgartirish"}
-            </button>
+            </Button>
           </form>
-        </section>
+        </Card>
       </div>
     </Layout>
   );
