@@ -19,6 +19,7 @@ import BillingCancel from './pages/BillingCancel';
 import History from './pages/History';
 import Settings from './pages/Settings';
 import Magic from './pages/Magic';
+import Remix from './pages/Remix';
 import Projects from './pages/Projects';
 import ProjectDetail from './pages/ProjectDetail';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -26,9 +27,12 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminGenerations from './pages/admin/AdminGenerations';
 import AdminPackages from './pages/admin/AdminPackages';
 import AdminAnnouncements from './pages/admin/AdminAnnouncements';
+import AdminProviders from './pages/admin/AdminProviders';
+import AdminEconomics from './pages/admin/AdminEconomics';
 
 const protectedRoutes = [
   { path: '/magic', element: <Magic /> },
+  { path: '/remix', element: <Remix /> },
   { path: '/projects', element: <Projects /> },
   { path: '/projects/:id', element: <ProjectDetail /> },
   { path: '/dashboard', element: <Dashboard /> },
@@ -45,6 +49,8 @@ const adminRoutes = [
   { path: '/admin/generations', element: <AdminGenerations /> },
   { path: '/admin/packages', element: <AdminPackages /> },
   { path: '/admin/announcements', element: <AdminAnnouncements /> },
+  { path: '/admin/providers', element: <AdminProviders /> },
+  { path: '/admin/economics', element: <AdminEconomics /> },
 ];
 
 function App() {

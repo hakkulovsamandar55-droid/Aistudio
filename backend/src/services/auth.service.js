@@ -27,6 +27,8 @@ function toPublicUser(user) {
     name: user.name,
     credits: user.credits,
     role: user.role,
+    plan: user.plan,
+    planExpiresAt: user.planExpiresAt,
     referralCode: user.referralCode,
     // Included on every auth payload (not just GET /me) so the dashboard can
     // render the claim prompt immediately after signup or login.

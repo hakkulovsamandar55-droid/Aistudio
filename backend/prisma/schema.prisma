@@ -46,6 +46,11 @@ enum Role {
   ADMIN
 }
 
+enum PlanType {
+  FREE
+  PRO
+}
+
 model User {
   id               String    @id @default(uuid())
   email            String    @unique
@@ -53,6 +58,8 @@ model User {
   name             String
   credits          Int       @default(10)
   role             Role      @default(USER)
+  plan             PlanType  @default(FREE)
+  planExpiresAt    DateTime? @map("plan_expires_at")
   isActive         Boolean   @default(true) @map("is_active")
   referralCode     String    @unique @map("referral_code")
   referredById     String?   @map("referred_by_id")
@@ -162,6 +169,24 @@ model PasswordResetToken {
 
   @@index([userId])
   @@map("password_reset_tokens")
+}
+
+/// Per-provider credentials and availability, editable from the admin panel.
+/// `apiKeyEnc` holds AES-256-GCM ciphertext — the plaintext key is never
+/// stored and never leaves the server.
+model ProviderSetting {
+  id        String   @id @default(uuid())
+  provider  String   @unique
+  apiKeyEnc String?  @map("api_key_enc")
+  baseUrl   String?  @map("base_url")
+  /// Off by default so an expensive vendor can sit configured-but-idle until
+  /// the economics justify switching it on.
+  isEnabled Boolean  @default(false) @map("is_enabled")
+  notes     String?
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("provider_settings")
 }
 
 model Announcement {

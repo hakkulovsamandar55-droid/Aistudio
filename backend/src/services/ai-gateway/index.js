@@ -1,5 +1,6 @@
 const { selectProvider, describeSelection } = require('./modelSelector');
 const videoTiers = require('./videoTiers');
+const providerSettings = require('../providerSettings.service');
 const logger = require('../../utils/logger');
 
 /**
@@ -49,6 +50,30 @@ class AIGateway {
     return { ...result, provider: result.provider || selected.name, module: moduleId };
   }
 
+  /**
+   * Image-to-image transformation (Remix). Not every image provider
+   * implements true img2img, so a provider without `remixImage` degrades to
+   * a style-guided `generateImage` call rather than failing the feature —
+   * the same "never hard-fail on a missing capability" rule the rest of the
+   * gateway follows for missing credentials.
+   */
+  async runImageRemix(sourceImageUrl, prompt, options = {}) {
+    const selected = selectProvider('IMAGE', options.provider);
+    const instance = this.getInstance('IMAGE', selected);
+
+    if (typeof instance.remixImage === 'function') {
+      logger.info(`AI Gateway: IMAGE remix -> ${selected.name}`);
+      const result = await instance.remixImage(sourceImageUrl, prompt, options);
+      return { ...result, provider: result.provider || selected.name, module: 'IMAGE' };
+    }
+
+    logger.warn(
+      `Provider "${selected.name}" has no image-to-image support — falling back to a style-guided generateImage().`
+    );
+    const result = await instance.generateImage(prompt, options);
+    return { ...result, provider: result.provider || selected.name, module: 'IMAGE' };
+  }
+
   /** Which provider each module would use right now. */
   describe() {
     return describeSelection();
@@ -56,6 +81,10 @@ class AIGateway {
 }
 
 const gateway = new AIGateway();
+
+// Cached provider instances captured the credentials that were current when
+// they were built, so they must be discarded whenever an admin edits them.
+providerSettings.onSettingsChange(() => gateway.resetInstances());
 
 /**
  * Runs one video attempt at a specific tier, translating the tier into the
@@ -85,6 +114,7 @@ async function runTier(prompt, options, tier) {
 // tests can spy on a single module without reaching into the registry.
 const imageGateway = {
   generateImage: (prompt, options) => gateway.run('IMAGE', prompt, options),
+  remixImage: (sourceImageUrl, prompt, options) => gateway.runImageRemix(sourceImageUrl, prompt, options),
 };
 
 const videoGateway = {

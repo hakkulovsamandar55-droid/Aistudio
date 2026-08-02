@@ -14,6 +14,13 @@ router.get('/users/:id', adminController.getUserDetail);
 router.post('/users/:id/credits', adminController.adjustCredits);
 router.patch('/users/:id/active', adminController.setActive);
 router.patch('/users/:id/role', adminController.setRole);
+router.patch('/users/:id/plan', adminController.setPlan);
+
+// Provider credentials. Responses only ever carry masked keys.
+router.get('/providers', adminController.getProviders);
+router.patch('/providers/:provider', adminController.updateProvider);
+
+router.get('/economics', adminController.getEconomics);
 
 router.get('/generations', adminController.getGenerations);
 

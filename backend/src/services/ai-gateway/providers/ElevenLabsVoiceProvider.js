@@ -1,13 +1,14 @@
 const axios = require('axios');
 const IVoiceProvider = require('./IVoiceProvider');
 const AppError = require('../../../utils/AppError');
+const providerSettings = require('../../providerSettings.service');
 
 const DEFAULT_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // ElevenLabs' stock "Rachel" voice
 
 class ElevenLabsVoiceProvider extends IVoiceProvider {
   constructor() {
     super();
-    this.baseUrl = process.env.ELEVENLABS_API_BASE_URL || 'https://api.elevenlabs.io/v1';
+    this.baseUrl = providerSettings.getBaseUrl('elevenlabs', 'https://api.elevenlabs.io/v1');
     this.modelId = process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2';
   }
 
@@ -20,7 +21,7 @@ class ElevenLabsVoiceProvider extends IVoiceProvider {
         { text: prompt, model_id: this.modelId },
         {
           headers: {
-            'xi-api-key': process.env.ELEVENLABS_API_KEY,
+            'xi-api-key': providerSettings.getApiKey('elevenlabs'),
             'Content-Type': 'application/json',
             Accept: 'audio/mpeg',
           },

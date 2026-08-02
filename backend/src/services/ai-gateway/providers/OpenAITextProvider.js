@@ -1,6 +1,7 @@
 const OpenAI = require('openai');
 const ITextProvider = require('./ITextProvider');
 const AppError = require('../../../utils/AppError');
+const providerSettings = require('../../providerSettings.service');
 
 class OpenAITextProvider extends ITextProvider {
   constructor() {
@@ -12,7 +13,7 @@ class OpenAITextProvider extends ITextProvider {
   // actually used, never at import time.
   get client() {
     if (!this._client) {
-      this._client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      this._client = new OpenAI({ apiKey: providerSettings.getApiKey('openai') });
     }
     return this._client;
   }

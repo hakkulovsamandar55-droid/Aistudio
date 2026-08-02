@@ -1,7 +1,9 @@
 # AI Studio — Backend
 
-Node.js + Express API for AI Studio. Handles auth, credits, the AI gateway
-(image/video generation), and Stripe billing.
+Node.js + Express API for AI Studio. Handles auth, credits, plans, the AI
+gateway (image/video/voice/music/script generation across multiple
+providers, admin-managed credentials), Remix (image-to-image), and Stripe
+billing.
 
 ## Stack
 
@@ -9,7 +11,9 @@ Node.js + Express API for AI Studio. Handles auth, credits, the AI gateway
 - PostgreSQL + Prisma
 - JWT auth (access + refresh)
 - Stripe (checkout + webhooks)
-- OpenAI (image generation, prompt enhancement) · Runway ML (video generation)
+- AI Gateway: OpenAI (image/text) · Wan/Kling/Runway/Veo (video, by quality
+  tier) · ElevenLabs (voice) · Suno (music) — every provider also has a mock
+  implementation so the app runs with zero API keys
 
 ## Setup
 
@@ -56,17 +60,41 @@ Node.js + Express API for AI Studio. Handles auth, credits, the AI gateway
 
 ## Switching to real AI providers
 
-Set in `.env`:
+Two ways to supply credentials, and they can be mixed:
 
-```
-IMAGE_PROVIDER=openai
-OPENAI_API_KEY=sk-...
-VIDEO_PROVIDER=runway
-RUNWAY_API_KEY=...
-```
+1. **`.env`**, same as always:
 
-No other code changes are needed — `src/services/ai-gateway/index.js` picks
-the provider class based on these env vars.
+   ```
+   IMAGE_PROVIDER=openai
+   OPENAI_API_KEY=sk-...
+   VIDEO_PROVIDER=runway
+   RUNWAY_API_KEY=...
+   ```
+
+2. **Admin panel** (`/admin/providers`, or `GET|PATCH /api/admin/providers`) —
+   an admin can enter a key, flip a provider on/off, and override the base
+   URL, all without a redeploy. A value set here always wins over `.env`; if
+   it's cleared, credentials fall back to whatever `.env` provides.
+
+Keys entered through the admin panel are encrypted at rest with AES-256-GCM
+(`src/utils/crypto.js`), keyed by `SETTINGS_ENCRYPTION_KEY` (32 bytes as hex —
+generate with `openssl rand -hex 32`). Without that env var set, saving a key
+via the admin panel is refused with a 503 rather than silently storing it in
+plaintext. No API response — admin or otherwise — ever returns a raw key;
+`GET /api/admin/providers` only ever returns a masked form (`sk-t••••cdef`).
+
+No other code changes are needed to add credentials for an already-registered
+provider — `src/services/providerSettings.service.js` and
+`src/services/ai-gateway/modelSelector.js` resolve the precedence above, and
+`src/services/ai-gateway/index.js` drops its cached provider instances the
+moment settings change so a rotated or newly-enabled key takes effect on the
+next request.
+
+For video specifically, provider choice is also driven by the requested
+*quality tier* (`low`/`standard`/`better`/`ultra`, mapped to
+wan/kling/runway/veo in `src/services/ai-gateway/videoTiers.js`) rather than a
+single `VIDEO_PROVIDER` pin — see that file for the fallback-to-cheaper-tier
+behavior when a tier's provider has no credentials.
 
 ## Stripe webhook (local testing)
 
@@ -96,11 +124,12 @@ otherwise. Rate limiters stand down under `NODE_ENV=test`.
 | Area | Endpoints |
 |---|---|
 | Auth | `POST /auth/register` (accepts `referralCode`), `/login`, `/refresh`, `/forgot-password`, `/reset-password` |
-| Profile | `GET|PATCH /users/me`, `POST /users/me/password`, `GET /users/me/stats`, `/credits/history`, `/generations`, `/referrals`, `POST /users/me/daily-bonus` |
+| Profile | `GET|PATCH /users/me`, `POST /users/me/password`, `GET /users/me/stats`, `/credits/history`, `/generations`, `/referrals`, `/me/quota`, `POST /users/me/daily-bonus` |
 | Generation | `GET /generate/styles`, `POST /generate/image`, `POST /generate/video`, `GET /generate/:id/status`, `GET /generate/:id/download`, `PATCH /generate/:id/favorite`, `PATCH /generate/:id/public`, `DELETE /generate/:id` |
+| Remix | `GET /remix/styles`, `POST /remix` (multipart: `image` file + `style` id) |
 | Public | `GET /gallery`, `GET /announcements`, `GET /payments/packages`, `GET /health` |
 | Payments | `POST /payments/checkout`, `POST /webhooks/stripe` |
-| Admin | `GET /admin/stats`, `/users`, `/users/:id`, `POST /users/:id/credits`, `PATCH /users/:id/active`, `PATCH /users/:id/role`, `GET /admin/generations`, `GET|POST|PATCH /admin/packages`, `GET|POST|PATCH|DELETE /admin/announcements` |
+| Admin | `GET /admin/stats`, `/users`, `/users/:id`, `POST /users/:id/credits`, `PATCH /users/:id/active`, `PATCH /users/:id/role`, `PATCH /users/:id/plan`, `GET /admin/generations`, `GET|POST|PATCH /admin/packages`, `GET|POST|PATCH|DELETE /admin/announcements`, `GET /admin/providers`, `PATCH /admin/providers/:provider`, `GET /admin/economics` |
 
 Notes worth knowing:
 
@@ -129,6 +158,25 @@ token expires. The matching UI lives at `/admin` on the frontend and only
 renders its nav link for admins. Promote a user either via the seed script's
 `ADMIN_EMAIL`/`ADMIN_PASSWORD`, or by having an existing admin call
 `PATCH /api/admin/users/:id/role`.
+
+## Plans & free-tier limits
+
+Every user is `FREE` or `PRO` (`User.plan`, `src/config/economics.config.js`).
+`FREE` gets a small daily cap per module (currently 1 video, 2 images, 2
+voice lines, 1 music track, 10 scripts/day — counted from non-failed
+`generations` rows, reset at local midnight); `PRO` ($4.99/mo, 360 credits)
+has no daily cap and lapses back to `FREE` automatically once
+`planExpiresAt` passes. `checkPlanLimit.middleware.js` enforces this and
+always runs *before* the credit check, so a free user out of quota gets a
+clear "come back tomorrow or upgrade" (429) instead of a confusing credit
+error. `GET /api/users/me/quota` gives the frontend a snapshot to warn
+before that happens. An admin sets a user's plan via
+`PATCH /api/admin/users/:id/plan`.
+
+`GET /api/admin/economics` reports estimated provider cost vs. credit value
+over the last 30 days, by module and by video quality tier — useful for
+checking the margin assumptions in `economics.config.js` against what
+generations are actually costing.
 
 ## Password reset
 

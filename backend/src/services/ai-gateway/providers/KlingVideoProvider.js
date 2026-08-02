@@ -1,4 +1,5 @@
 const TaskPollingVideoProvider = require('./TaskPollingVideoProvider');
+const providerSettings = require('../../providerSettings.service');
 
 const SUCCESS_STATES = new Set(['succeed', 'succeeded', 'success', 'completed']);
 const FAILURE_STATES = new Set(['failed', 'fail', 'error']);
@@ -14,8 +15,8 @@ class KlingVideoProvider extends TaskPollingVideoProvider {
   constructor() {
     super({
       name: 'kling',
-      baseURL: process.env.KLING_API_BASE_URL || 'https://api.klingai.com/v1',
-      headers: { Authorization: `Bearer ${process.env.KLING_API_KEY}` },
+      baseURL: providerSettings.getBaseUrl('kling', 'https://api.klingai.com/v1'),
+      headers: { Authorization: `Bearer ${providerSettings.getApiKey('kling')}` },
       pollIntervalMs: 5000,
       maxWaitMs: 6 * 60 * 1000,
     });

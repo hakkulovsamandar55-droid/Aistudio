@@ -1,6 +1,7 @@
 const axios = require('axios');
 const IMusicProvider = require('./IMusicProvider');
 const AppError = require('../../../utils/AppError');
+const providerSettings = require('../../providerSettings.service');
 
 const POLL_INTERVAL_MS = 5000;
 const MAX_WAIT_MS = 3 * 60 * 1000;
@@ -9,9 +10,9 @@ class SunoMusicProvider extends IMusicProvider {
   constructor() {
     super();
     this.client = axios.create({
-      baseURL: process.env.SUNO_API_BASE_URL || 'https://api.sunoapi.org/api/v1',
+      baseURL: providerSettings.getBaseUrl('suno', 'https://api.sunoapi.org/api/v1'),
       headers: {
-        Authorization: `Bearer ${process.env.SUNO_API_KEY}`,
+        Authorization: `Bearer ${providerSettings.getApiKey('suno')}`,
         'Content-Type': 'application/json',
       },
       timeout: 30000,

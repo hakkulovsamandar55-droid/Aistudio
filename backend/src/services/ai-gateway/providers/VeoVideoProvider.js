@@ -1,4 +1,5 @@
 const TaskPollingVideoProvider = require('./TaskPollingVideoProvider');
+const providerSettings = require('../../providerSettings.service');
 
 /**
  * Google Veo — the top tier.
@@ -11,8 +12,8 @@ class VeoVideoProvider extends TaskPollingVideoProvider {
   constructor() {
     super({
       name: 'veo',
-      baseURL: process.env.VEO_API_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta',
-      headers: { 'x-goog-api-key': process.env.VEO_API_KEY },
+      baseURL: providerSettings.getBaseUrl('veo', 'https://generativelanguage.googleapis.com/v1beta'),
+      headers: { 'x-goog-api-key': providerSettings.getApiKey('veo') },
       pollIntervalMs: 10000,
       maxWaitMs: 8 * 60 * 1000,
     });

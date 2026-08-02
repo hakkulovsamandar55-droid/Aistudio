@@ -1,4 +1,5 @@
 const TaskPollingVideoProvider = require('./TaskPollingVideoProvider');
+const providerSettings = require('../../providerSettings.service');
 
 const SUCCESS_STATES = new Set(['succeeded', 'success']);
 const FAILURE_STATES = new Set(['failed', 'canceled', 'unknown']);
@@ -14,9 +15,9 @@ class WanVideoProvider extends TaskPollingVideoProvider {
   constructor() {
     super({
       name: 'wan',
-      baseURL: process.env.WAN_API_BASE_URL || 'https://dashscope-intl.aliyuncs.com/api/v1',
+      baseURL: providerSettings.getBaseUrl('wan', 'https://dashscope-intl.aliyuncs.com/api/v1'),
       headers: {
-        Authorization: `Bearer ${process.env.WAN_API_KEY}`,
+        Authorization: `Bearer ${providerSettings.getApiKey('wan')}`,
         'X-DashScope-Async': 'enable',
       },
       pollIntervalMs: 4000,

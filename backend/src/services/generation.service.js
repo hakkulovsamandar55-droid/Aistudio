@@ -1,3 +1,4 @@
+const fs = require('fs');
 const prisma = require('../config/db');
 const { CREDIT_COSTS } = require('../config/credits.config');
 const { applyStyle } = require('../config/styles.config');
@@ -61,6 +62,62 @@ async function createImageGeneration(userId, userPrompt, options = {}) {
       data: { status: 'FAILED', errorMessage: err.message },
     });
     throw err;
+  }
+}
+
+/**
+ * Remix: transform an uploaded image with a one-click style preset. Priced
+ * and counted against the IMAGE module (same cost, same daily quota) since
+ * it produces the same kind of asset — no need for a separate credit type.
+ *
+ * @param {object} upload - { path: absolute file path, url: public URL }
+ */
+async function createRemixGeneration(userId, upload, styleId) {
+  const requiredCredits = CREDIT_COSTS.IMAGE;
+  await creditService.checkSufficientCredits(userId, requiredCredits);
+
+  const remixStyles = require('../config/remixStyles.config');
+  const style = remixStyles.findRemixStyle(styleId);
+  const label = style ? style.label : 'Remix';
+
+  let generation = await prisma.generation.create({
+    data: {
+      userId,
+      type: 'IMAGE',
+      userPrompt: `Remix (${label}): uploaded image`,
+      style: style ? style.id : null,
+      status: 'PROCESSING',
+      provider: 'pending',
+    },
+  });
+
+  try {
+    const prompt = remixStyles.buildRemixPrompt(styleId);
+
+    const { url, provider } = await imageGateway.remixImage(upload.url, prompt, {
+      sourceImagePath: upload.path,
+    });
+
+    generation = await prisma.generation.update({
+      where: { id: generation.id },
+      data: { status: 'COMPLETED', enhancedPrompt: prompt, resultUrl: url, provider, creditsUsed: requiredCredits },
+    });
+
+    await creditService.deductCredits(userId, requiredCredits, 'GENERATION_IMAGE', `Remix: ${label}`);
+
+    return generation;
+  } catch (err) {
+    await prisma.generation.update({
+      where: { id: generation.id },
+      data: { status: 'FAILED', errorMessage: err.message },
+    });
+    throw err;
+  } finally {
+    // The source upload is only needed for the duration of the transform —
+    // nothing else references it, so it doesn't need to linger on disk.
+    fs.unlink(upload.path, (err) => {
+      if (err) logger.warn(`Could not remove remix upload ${upload.path}: ${err.message}`);
+    });
   }
 }
 
@@ -222,6 +279,7 @@ async function listPublicGenerations({ page = 1, limit = 24, type }) {
 module.exports = {
   NOT_DELETED,
   createImageGeneration,
+  createRemixGeneration,
   createVideoGeneration,
   getGenerationStatus,
   getOwnedGeneration,

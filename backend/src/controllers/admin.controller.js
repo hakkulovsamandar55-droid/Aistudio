@@ -1,6 +1,10 @@
 const adminService = require('../services/admin.service');
+const providerSettings = require('../services/providerSettings.service');
+const planService = require('../services/plan.service');
+const { isEncryptionConfigured } = require('../utils/crypto');
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
+const logger = require('../utils/logger');
 
 const getStats = asyncHandler(async (req, res) => {
   const stats = await adminService.getStats();
@@ -83,6 +87,47 @@ const deleteAnnouncement = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { id: req.params.id, deleted: true } });
 });
 
+const getProviders = asyncHandler(async (req, res) => {
+  const providers = await providerSettings.list();
+  res.json({
+    success: true,
+    data: {
+      providers,
+      // Surfaced so the UI can explain why saving a key is refused rather
+      // than showing a bare 503.
+      encryptionConfigured: isEncryptionConfigured(),
+    },
+  });
+});
+
+const updateProvider = asyncHandler(async (req, res) => {
+  const { apiKey, baseUrl, isEnabled, notes } = req.body;
+  const updated = await providerSettings.update(req.params.provider, {
+    apiKey,
+    baseUrl,
+    isEnabled,
+    notes,
+  });
+
+  logger.info(`Admin ${req.user.id} updated provider settings for ${req.params.provider}`);
+  res.json({ success: true, data: updated });
+});
+
+const getEconomics = asyncHandler(async (req, res) => {
+  const data = await adminService.getEconomics();
+  res.json({ success: true, data });
+});
+
+const setPlan = asyncHandler(async (req, res) => {
+  const { plan, expiresAt } = req.body;
+  const updated = await planService.setPlan(
+    req.params.id,
+    plan,
+    expiresAt ? new Date(expiresAt) : undefined
+  );
+  res.json({ success: true, data: updated });
+});
+
 module.exports = {
   getStats,
   getUsers,
@@ -90,6 +135,10 @@ module.exports = {
   adjustCredits,
   setActive,
   setRole,
+  setPlan,
+  getProviders,
+  updateProvider,
+  getEconomics,
   getGenerations,
   getPackages,
   createPackage,

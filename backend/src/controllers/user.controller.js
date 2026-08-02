@@ -2,6 +2,7 @@ const prisma = require('../config/db');
 const asyncHandler = require('../utils/asyncHandler');
 const authService = require('../services/auth.service');
 const accountService = require('../services/account.service');
+const planService = require('../services/plan.service');
 const { NOT_DELETED } = require('../services/generation.service');
 const AppError = require('../utils/AppError');
 
@@ -143,6 +144,11 @@ const claimDailyBonus = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+const getQuota = asyncHandler(async (req, res) => {
+  const data = await planService.getQuotaSummary(req.user.id);
+  res.json({ success: true, data });
+});
+
 module.exports = {
   getMe,
   updateMe,
@@ -152,4 +158,5 @@ module.exports = {
   getGenerations,
   getReferrals,
   claimDailyBonus,
+  getQuota,
 };

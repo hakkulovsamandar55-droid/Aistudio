@@ -97,11 +97,37 @@ function isFallbackEnabled() {
   return String(process.env.VIDEO_TIER_FALLBACK || '').toLowerCase() === 'true';
 }
 
-/** Tier catalogue for the API/UI, cheapest first. */
+/** Tier catalogue for the API/UI, cheapest first. Provider/model stay internal. */
 function listTiers() {
   return TIER_ORDER.map((id) => {
     const { provider, model, ...publicFields } = VIDEO_TIERS[id];
     return publicFields;
+  });
+}
+
+/**
+ * Admin view: tiers with their provider, estimated unit cost and the margin
+ * at the tier's credit price. Lets an operator see which tiers are worth
+ * enabling before turning on an expensive vendor.
+ */
+function describeEconomics() {
+  const { unitCostFor, USD_PER_CREDIT } = require('../../config/economics.config');
+
+  return TIER_ORDER.map((id) => {
+    const tier = VIDEO_TIERS[id];
+    const costUsd = unitCostFor('VIDEO', tier.provider);
+    const revenueUsd = tier.credits * USD_PER_CREDIT;
+
+    return {
+      tier: tier.id,
+      label: tier.label,
+      provider: tier.provider,
+      credits: tier.credits,
+      costUsd: Number(costUsd.toFixed(4)),
+      revenueUsd: Number(revenueUsd.toFixed(4)),
+      marginUsd: Number((revenueUsd - costUsd).toFixed(4)),
+      marginPercent: revenueUsd === 0 ? null : Math.round(((revenueUsd - costUsd) / revenueUsd) * 100),
+    };
   });
 }
 
@@ -115,4 +141,5 @@ module.exports = {
   lowerTier,
   isFallbackEnabled,
   listTiers,
+  describeEconomics,
 };

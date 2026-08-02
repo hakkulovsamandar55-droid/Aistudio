@@ -91,6 +91,16 @@ export default function AdminUsers() {
     }
   };
 
+  const togglePlan = async () => {
+    setBusy(true);
+    try {
+      await adminApi.setUserPlan(selected.id, detail.plan === 'PRO' ? 'FREE' : 'PRO');
+      await refreshSelected();
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <AdminLayout>
       <h1 className="text-2xl font-bold text-white">Foydalanuvchilar</h1>
@@ -187,6 +197,13 @@ export default function AdminUsers() {
                 <div className="mt-4 flex flex-wrap gap-2 text-sm">
                   <span className="rounded-full bg-gray-700 px-3 py-1">💎 {detail.credits} kredit</span>
                   <span className="rounded-full bg-gray-700 px-3 py-1">{detail.role}</span>
+                  <span
+                    className={`rounded-full px-3 py-1 ${
+                      detail.plan === 'PRO' ? 'bg-indigo-900/50 text-indigo-300' : 'bg-gray-700'
+                    }`}
+                  >
+                    {detail.plan === 'PRO' ? '⭐ Pro' : 'Bepul'}
+                  </span>
                   <span className="rounded-full bg-gray-700 px-3 py-1">
                     {detail.isActive ? 'Faol' : 'Bloklangan'}
                   </span>
@@ -208,6 +225,14 @@ export default function AdminUsers() {
                     {detail.role === 'ADMIN' ? 'Admin huquqini olish' : 'Admin qilish'}
                   </button>
                 </div>
+
+                <button
+                  onClick={togglePlan}
+                  disabled={busy}
+                  className="mt-2 w-full rounded-lg border border-gray-600 py-2 text-sm hover:bg-gray-700 disabled:opacity-50"
+                >
+                  {detail.plan === 'PRO' ? "Pro'dan Bepulga o'tkazish" : "Pro tarifga o'tkazish"}
+                </button>
 
                 <form onSubmit={handleAdjustCredits} className="mt-5 space-y-2 border-t border-gray-700 pt-4">
                   <p className="text-sm font-medium text-gray-300">Kredit qo'shish / ayirish</p>

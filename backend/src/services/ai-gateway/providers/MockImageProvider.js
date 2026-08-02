@@ -15,6 +15,17 @@ class MockImageProvider extends IImageProvider {
       provider: 'mock',
     };
   }
+
+  async remixImage(sourceImageUrl, prompt, options = {}) {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    // Deterministic per source+style so re-running a remix in dev looks stable.
+    const seed = encodeURIComponent(`${sourceImageUrl}-${prompt}`.slice(0, 60));
+    return {
+      url: `https://picsum.photos/seed/${seed}/1024/1024`,
+      provider: 'mock',
+    };
+  }
 }
 
 module.exports = MockImageProvider;

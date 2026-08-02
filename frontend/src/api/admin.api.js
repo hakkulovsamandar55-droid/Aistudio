@@ -7,6 +7,7 @@ export const adminApi = {
   adjustCredits: (id, amount, description) => api.post(`/admin/users/${id}/credits`, { amount, description }),
   setUserActive: (id, isActive) => api.patch(`/admin/users/${id}/active`, { isActive }),
   setUserRole: (id, role) => api.patch(`/admin/users/${id}/role`, { role }),
+  setUserPlan: (id, plan) => api.patch(`/admin/users/${id}/plan`, { plan }),
   getGenerations: (page = 1, limit = 20, filters = {}) =>
     api.get('/admin/generations', { params: { page, limit, ...filters } }),
   getPackages: () => api.get('/admin/packages'),
@@ -16,4 +17,7 @@ export const adminApi = {
   createAnnouncement: (message) => api.post('/admin/announcements', { message }),
   updateAnnouncement: (id, data) => api.patch(`/admin/announcements/${id}`, data),
   deleteAnnouncement: (id) => api.delete(`/admin/announcements/${id}`),
+  getProviders: () => api.get('/admin/providers'),
+  updateProvider: (provider, data) => api.patch(`/admin/providers/${provider}`, data),
+  getEconomics: () => api.get('/admin/economics'),
 };

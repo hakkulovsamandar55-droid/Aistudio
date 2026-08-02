@@ -11,6 +11,9 @@ const WanVideoProvider = require('./providers/WanVideoProvider');
 const VeoVideoProvider = require('./providers/VeoVideoProvider');
 const ElevenLabsVoiceProvider = require('./providers/ElevenLabsVoiceProvider');
 const SunoMusicProvider = require('./providers/SunoMusicProvider');
+const providerSettings = require('../providerSettings.service');
+
+const { PROVIDER_CATALOG } = providerSettings;
 
 /**
  * Every provider the platform can route to, grouped by module.
@@ -115,7 +118,16 @@ const PROVIDERS = {
   },
 };
 
-function hasCredentials(entry) {
+/**
+ * A provider is usable when it holds a credential *and* an operator hasn't
+ * switched it off. Credentials may come from the admin panel or the
+ * environment; `requiresEnv` is retained as the env-only fallback for
+ * providers with no settings row.
+ */
+function hasCredentials(entry, providerName) {
+  if (providerName && PROVIDER_CATALOG[providerName]) {
+    return providerSettings.isEnabled(providerName);
+  }
   return (entry.requiresEnv || []).every((key) => Boolean(process.env[key]));
 }
 

@@ -15,6 +15,20 @@ class IImageProvider {
   async generateImage(prompt, options = {}) {
     throw new Error('generateImage() must be implemented by the provider subclass');
   }
+
+  /**
+   * True image-to-image transformation (Remix). Optional: a provider that
+   * only supports text-to-image should leave this unimplemented — the
+   * gateway detects that and degrades to a style-guided generateImage() call
+   * instead of failing the feature outright.
+   *
+   * @param {string} sourceImageUrl - publicly reachable URL of the uploaded image
+   * @param {string} prompt - the transformation instruction
+   * @param {object} [options]
+   * @param {string} [options.sourceImagePath] - local filesystem path, for
+   *   providers whose API needs raw image bytes rather than a URL
+   * @returns {Promise<{ url: string, provider: string }>}
+   */
 }
 
 module.exports = IImageProvider;

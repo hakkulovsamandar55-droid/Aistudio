@@ -2,6 +2,7 @@ const express = require('express');
 const generationController = require('../controllers/generation.controller');
 const authMiddleware = require('../middleware/auth.middleware');
 const checkCredits = require('../middleware/checkCredits.middleware');
+const checkPlanLimit = require('../middleware/checkPlanLimit.middleware');
 const { generateLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
@@ -13,8 +14,22 @@ router.get('/styles', generationController.listStyles);
 // The rate limiter is scoped to the two endpoints that actually cost money.
 // It must NOT cover /:id/status — the video page polls that every 5s, which
 // would otherwise trip the limit mid-generation.
-router.post('/image', generateLimiter, checkCredits('IMAGE'), generationController.generateImage);
-router.post('/video', generateLimiter, checkCredits('VIDEO'), generationController.generateVideo);
+// Plan limit first, then credits: a free user out of daily quota should be
+// told to come back tomorrow, not that their credits are wrong.
+router.post(
+  '/image',
+  generateLimiter,
+  checkPlanLimit('IMAGE'),
+  checkCredits('IMAGE'),
+  generationController.generateImage
+);
+router.post(
+  '/video',
+  generateLimiter,
+  checkPlanLimit('VIDEO'),
+  checkCredits('VIDEO'),
+  generationController.generateVideo
+);
 
 router.get('/:id/status', generationController.getStatus);
 router.get('/:id/download', generationController.download);

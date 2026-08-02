@@ -24,3 +24,6 @@ npm-debug.log*
 
 # Prisma
 backend/prisma/dev.db
+
+# User uploads (Remix source images) — transient, deleted after processing
+backend/uploads/

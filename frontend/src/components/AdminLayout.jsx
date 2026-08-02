@@ -5,6 +5,8 @@ const NAV_ITEMS = [
   { to: '/admin', label: 'Statistika' },
   { to: '/admin/users', label: "Foydalanuvchilar" },
   { to: '/admin/generations', label: 'Generatsiyalar' },
+  { to: '/admin/providers', label: 'API kalitlar' },
+  { to: '/admin/economics', label: 'Iqtisodiyot' },
   { to: '/admin/packages', label: 'Kredit paketlari' },
   { to: '/admin/announcements', label: "E'lonlar" },
 ];

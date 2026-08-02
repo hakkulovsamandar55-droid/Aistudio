@@ -72,6 +72,67 @@ async function getStats() {
   };
 }
 
+/**
+ * Estimated unit economics: what the platform has spent with providers versus
+ * what users paid in credits. Figures are modelled from published vendor
+ * pricing (see economics.config.js), not billed amounts.
+ */
+async function getEconomics() {
+  const { unitCostFor, USD_PER_CREDIT, PLANS } = require('../config/economics.config');
+  const videoTiers = require('./ai-gateway/videoTiers');
+
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const [byModule, purchasedAgg, planCounts] = await Promise.all([
+    prisma.generation.groupBy({
+      by: ['type', 'provider'],
+      where: { status: 'COMPLETED', deletedAt: null, createdAt: { gte: since } },
+      _count: { _all: true },
+      _sum: { creditsUsed: true },
+    }),
+    prisma.creditTransaction.aggregate({
+      where: { type: 'PURCHASE', createdAt: { gte: since } },
+      _sum: { amount: true },
+    }),
+    prisma.user.groupBy({ by: ['plan'], _count: { _all: true } }),
+  ]);
+
+  let estimatedCostUsd = 0;
+  let creditRevenueUsd = 0;
+
+  const breakdown = byModule.map((row) => {
+    const count = row._count._all;
+    const credits = row._sum.creditsUsed || 0;
+    const cost = unitCostFor(row.type, row.provider) * count;
+    const revenue = credits * USD_PER_CREDIT;
+
+    estimatedCostUsd += cost;
+    creditRevenueUsd += revenue;
+
+    return {
+      module: row.type,
+      provider: row.provider,
+      generations: count,
+      credits,
+      estimatedCostUsd: Number(cost.toFixed(4)),
+      creditValueUsd: Number(revenue.toFixed(4)),
+    };
+  });
+
+  return {
+    windowDays: 30,
+    breakdown: breakdown.sort((a, b) => b.estimatedCostUsd - a.estimatedCostUsd),
+    estimatedCostUsd: Number(estimatedCostUsd.toFixed(2)),
+    creditValueUsd: Number(creditRevenueUsd.toFixed(2)),
+    estimatedMarginUsd: Number((creditRevenueUsd - estimatedCostUsd).toFixed(2)),
+    creditsPurchased: purchasedAgg._sum.amount || 0,
+    purchaseRevenueUsd: Number(((purchasedAgg._sum.amount || 0) * USD_PER_CREDIT).toFixed(2)),
+    usersByPlan: Object.fromEntries(planCounts.map((row) => [row.plan, row._count._all])),
+    plans: Object.values(PLANS),
+    videoTiers: videoTiers.describeEconomics(),
+  };
+}
+
 async function listAnnouncements() {
   return prisma.announcement.findMany({ orderBy: { createdAt: 'desc' } });
 }
@@ -134,6 +195,8 @@ async function listUsers(query) {
         name: true,
         credits: true,
         role: true,
+        plan: true,
+        planExpiresAt: true,
         isActive: true,
         createdAt: true,
       },
@@ -153,6 +216,8 @@ async function getUserDetail(userId) {
       name: true,
       credits: true,
       role: true,
+      plan: true,
+      planExpiresAt: true,
       isActive: true,
       createdAt: true,
     },
@@ -281,6 +346,7 @@ module.exports = {
   listPackages,
   createPackage,
   updatePackage,
+  getEconomics,
   listAnnouncements,
   createAnnouncement,
   updateAnnouncement,

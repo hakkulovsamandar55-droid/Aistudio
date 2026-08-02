@@ -1,6 +1,8 @@
+const fs = require('fs');
 const OpenAI = require('openai');
 const IImageProvider = require('./IImageProvider');
 const AppError = require('../../../utils/AppError');
+const providerSettings = require('../../providerSettings.service');
 const logger = require('../../../utils/logger');
 
 const MAX_RETRIES = 2;
@@ -18,7 +20,7 @@ function isRetryable(err) {
 class OpenAIImageProvider extends IImageProvider {
   constructor() {
     super();
-    this.client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    this.client = new OpenAI({ apiKey: providerSettings.getApiKey('openai') });
     this.model = process.env.OPENAI_IMAGE_MODEL || 'gpt-image-1';
   }
 
@@ -63,6 +65,49 @@ class OpenAIImageProvider extends IImageProvider {
     }
 
     throw new AppError(`Image generation failed: ${lastError?.message || 'unknown error'}`, 502);
+  }
+
+  /**
+   * True image-to-image transformation via OpenAI's edit endpoint.
+   *
+   * TODO: gpt-image-1's edit endpoint takes the *reference* image as the base
+   * to edit rather than a mask-guided inpaint — confirm against current
+   * OpenAI docs that a plain "transform this into style X" prompt produces
+   * the intended one-click Remix result, since edit semantics can shift
+   * between model versions.
+   */
+  async remixImage(sourceImageUrl, prompt, options = {}) {
+    const { sourceImagePath, size = '1024x1024' } = options;
+    if (!sourceImagePath) {
+      throw new AppError('OpenAI image remix requires a local file path', 500);
+    }
+
+    try {
+      const response = await this.client.images.edit({
+        model: this.model,
+        image: fs.createReadStream(sourceImagePath),
+        prompt,
+        size,
+        n: 1,
+      });
+
+      const image = response.data[0];
+      const url = image.url || (image.b64_json ? `data:image/png;base64,${image.b64_json}` : null);
+
+      if (!url) {
+        throw new AppError('OpenAI returned no image data', 502);
+      }
+
+      return { url, provider: 'openai' };
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+
+      if (err?.status === 400 && /content_policy|safety/i.test(err?.message || '')) {
+        throw new AppError('Image request was rejected by OpenAI content policy. Try a different image.', 422);
+      }
+
+      throw new AppError(`Image remix failed: ${err.message}`, 502);
+    }
   }
 }
 

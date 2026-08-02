@@ -4,6 +4,7 @@ import { cx } from './ui';
 
 const NAV_ITEMS = [
   { to: '/magic', label: 'Magic', icon: '✨' },
+  { to: '/remix', label: 'Remix', icon: '🔁' },
   { to: '/dashboard', label: 'Bosh sahifa', icon: '◈' },
   { to: '/projects', label: 'Loyihalar', icon: '❖' },
   { to: '/history', label: 'Tarix', icon: '◷' },

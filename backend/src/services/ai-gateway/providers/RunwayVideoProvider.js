@@ -1,6 +1,7 @@
 const axios = require('axios');
 const IVideoProvider = require('./IVideoProvider');
 const AppError = require('../../../utils/AppError');
+const providerSettings = require('../../providerSettings.service');
 
 const POLL_INTERVAL_MS = 5000;
 const MAX_WAIT_MS = 5 * 60 * 1000;
@@ -8,11 +9,11 @@ const MAX_WAIT_MS = 5 * 60 * 1000;
 class RunwayVideoProvider extends IVideoProvider {
   constructor() {
     super();
-    this.baseUrl = process.env.RUNWAY_API_BASE_URL || 'https://api.dev.runwayml.com/v1';
+    this.baseUrl = providerSettings.getBaseUrl('runway', 'https://api.dev.runwayml.com/v1');
     this.client = axios.create({
       baseURL: this.baseUrl,
       headers: {
-        Authorization: `Bearer ${process.env.RUNWAY_API_KEY}`,
+        Authorization: `Bearer ${providerSettings.getApiKey('runway')}`,
         'Content-Type': 'application/json',
       },
       timeout: 30000,

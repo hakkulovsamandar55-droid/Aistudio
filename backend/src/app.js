@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -26,6 +27,18 @@ app.use('/api/webhooks', webhookRoutes);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serves Remix source uploads. The frontend (a different origin in dev) needs
+// to <img>-embed these, which helmet's default same-origin Cross-Origin-
+// Resource-Policy would otherwise block.
+app.use(
+  '/uploads',
+  (req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+  },
+  express.static(path.join(__dirname, '..', 'uploads'))
+);
+
 app.get('/api/health', (req, res) => {
   res.json({ success: true, status: 'ok', timestamp: new Date().toISOString() });
 });
@@ -33,6 +46,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/users', require('./routes/user.routes'));
 app.use('/api/generate', require('./routes/generation.routes'));
+app.use('/api/remix', require('./routes/remix.routes'));
 app.use('/api/magic', require('./routes/magic.routes'));
 app.use('/api/projects', require('./routes/project.routes'));
 app.use('/api/modules', require('./routes/module.routes'));
