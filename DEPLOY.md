@@ -86,6 +86,30 @@ deploy.
          kredit qo'shilyaptimi
    - [ ] Tarix sahifasi — barcha generatsiyalar ko'rinyaptimi
 
+## 3-qism — Muqobil: o'z VPS'ingizda (GitHub Actions orqali avtomatik deploy)
+
+Railway/Vercel o'rniga o'z VPS serveringizda (Node.js + PostgreSQL + Nginx,
+bitta serverda) ham deploy qilish mumkin. Bu holatda:
+
+1. Serverda bir martalik tayyorgarlik qilinadi: Node.js, PostgreSQL, Nginx,
+   PM2 o'rnatiladi; `/var/www/aistudio/{backend,frontend}` papkalar va
+   `backend/.env` yaratiladi; Nginx `/api` va `/uploads`ni backend'ga
+   proxy qiladi, qolgan hamma narsani `frontend/dist`dan static serve
+   qiladi.
+2. Repo'da `.github/workflows/deploy.yml` bor — `claude/salom-g8fylr`
+   branch'iga har push'da GitHub Actions runner kodni `rsync` orqali
+   serverga ko'chiradi, `npm ci`, `prisma migrate deploy`, `npm run build`
+   ishga tushiradi va PM2 orqali backend'ni qayta ishga tushiradi.
+3. Bu workflow uchun repo Settings → Secrets and variables → Actions
+   bo'limida uchta secret kerak: `VPS_HOST` (server IP), `VPS_USER`
+   (masalan `ubuntu`), `VPS_SSH_KEY` (faqat shu deploy uchun yaratilgan SSH
+   private key — serverdagi `~/.ssh/authorized_keys`ga mos public key
+   qo'shilgan bo'lishi kerak).
+
+Bu usulda AI provayder kalitlari (`OPENAI_API_KEY` va h.k.) `.env` fayliga
+emas, admin panel (`/admin/providers`) orqali kiritiladi — shu sababli
+alohida deploy/redeploy talab qilmaydi.
+
 ## Xavfsizlik eslatmasi
 
 Hech qanday API kalitni (`OPENAI_API_KEY`, `RUNWAY_API_KEY`,
