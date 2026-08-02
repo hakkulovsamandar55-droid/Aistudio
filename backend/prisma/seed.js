@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const { PrismaClient } = require('@prisma/client');
 const { CREDIT_PACKAGES } = require('../src/config/credits.config');
+const { generateUniqueReferralCode } = require('../src/services/account.service');
 
 const prisma = new PrismaClient();
 
@@ -11,6 +12,7 @@ async function seedAdmin() {
     return;
   }
 
+  const existing = await prisma.user.findUnique({ where: { email: ADMIN_EMAIL } });
   const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 10);
 
   await prisma.user.upsert({
@@ -22,6 +24,10 @@ async function seedAdmin() {
       name: 'Admin',
       role: 'ADMIN',
       credits: 0,
+      // referralCode is required/unique on User and has no DB default —
+      // registerUser() normally allocates one, but the seed script creates
+      // this row directly, so it has to allocate one too.
+      referralCode: existing ? existing.referralCode : await generateUniqueReferralCode(prisma),
     },
   });
 
