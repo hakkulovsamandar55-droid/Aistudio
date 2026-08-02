@@ -1,36 +1,108 @@
 const prisma = require('../config/db');
 const AppError = require('../utils/AppError');
 
+const DAYS_IN_TREND = 7;
+
+/** Buckets rows by day so the dashboard can draw a 7-day trend. */
+function buildDailySeries(rows, days = DAYS_IN_TREND) {
+  const counts = new Map();
+  for (const row of rows) {
+    const key = row.createdAt.toISOString().slice(0, 10);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+
+  const series = [];
+  for (let offset = days - 1; offset >= 0; offset -= 1) {
+    const date = new Date(Date.now() - offset * 24 * 60 * 60 * 1000);
+    const key = date.toISOString().slice(0, 10);
+    series.push({ date: key, count: counts.get(key) || 0 });
+  }
+  return series;
+}
+
 async function getStats() {
+  const since = new Date(Date.now() - DAYS_IN_TREND * 24 * 60 * 60 * 1000);
+
   const [
     totalUsers,
+    activeUsers,
     totalGenerations,
     generationsByStatus,
     generationsByType,
     creditsSoldAgg,
-    revenueAgg,
+    purchaseCount,
+    creditsOutstandingAgg,
+    recentUsers,
+    recentGenerations,
   ] = await Promise.all([
     prisma.user.count(),
-    prisma.generation.count(),
-    prisma.generation.groupBy({ by: ['status'], _count: { _all: true } }),
-    prisma.generation.groupBy({ by: ['type'], _count: { _all: true } }),
-    prisma.creditTransaction.aggregate({
-      where: { type: 'PURCHASE' },
-      _sum: { amount: true },
-    }),
+    prisma.user.count({ where: { isActive: true } }),
+    prisma.generation.count({ where: { deletedAt: null } }),
+    prisma.generation.groupBy({ by: ['status'], where: { deletedAt: null }, _count: { _all: true } }),
+    prisma.generation.groupBy({ by: ['type'], where: { deletedAt: null }, _count: { _all: true } }),
+    prisma.creditTransaction.aggregate({ where: { type: 'PURCHASE' }, _sum: { amount: true } }),
     prisma.creditTransaction.count({ where: { type: 'PURCHASE' } }),
+    prisma.user.aggregate({ _sum: { credits: true } }),
+    prisma.user.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } }),
+    prisma.generation.findMany({
+      where: { createdAt: { gte: since }, deletedAt: null },
+      select: { createdAt: true },
+    }),
   ]);
+
+  const byStatus = Object.fromEntries(generationsByStatus.map((row) => [row.status, row._count._all]));
+  const completed = byStatus.COMPLETED || 0;
+  const failed = byStatus.FAILED || 0;
+  const finished = completed + failed;
 
   return {
     totalUsers,
+    activeUsers,
     totalGenerations,
-    generationsByStatus: Object.fromEntries(
-      generationsByStatus.map((row) => [row.status, row._count._all])
-    ),
+    generationsByStatus: byStatus,
     generationsByType: Object.fromEntries(generationsByType.map((row) => [row.type, row._count._all])),
     creditsSold: creditsSoldAgg._sum.amount || 0,
-    totalPurchases: revenueAgg,
+    totalPurchases: purchaseCount,
+    creditsOutstanding: creditsOutstandingAgg._sum.credits || 0,
+    successRate: finished === 0 ? null : Math.round((completed / finished) * 100),
+    trend: {
+      signups: buildDailySeries(recentUsers),
+      generations: buildDailySeries(recentGenerations),
+    },
   };
+}
+
+async function listAnnouncements() {
+  return prisma.announcement.findMany({ orderBy: { createdAt: 'desc' } });
+}
+
+async function createAnnouncement(message) {
+  if (!message || !message.trim()) {
+    throw new AppError('message is required', 400);
+  }
+  return prisma.announcement.create({ data: { message: message.trim() } });
+}
+
+async function updateAnnouncement(id, data) {
+  const existing = await prisma.announcement.findUnique({ where: { id } });
+  if (!existing) {
+    throw new AppError('Announcement not found', 404);
+  }
+
+  const updateData = {};
+  if (data.message !== undefined) updateData.message = String(data.message).trim();
+  if (data.isActive !== undefined) updateData.isActive = Boolean(data.isActive);
+
+  return prisma.announcement.update({ where: { id }, data: updateData });
+}
+
+async function deleteAnnouncement(id) {
+  const existing = await prisma.announcement.findUnique({ where: { id } });
+  if (!existing) {
+    throw new AppError('Announcement not found', 404);
+  }
+  await prisma.announcement.delete({ where: { id } });
+  return true;
 }
 
 function parsePagination(query) {
@@ -209,4 +281,8 @@ module.exports = {
   listPackages,
   createPackage,
   updatePackage,
+  listAnnouncements,
+  createAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement,
 };

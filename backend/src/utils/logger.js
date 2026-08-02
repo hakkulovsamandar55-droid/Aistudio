@@ -6,6 +6,9 @@ const levelColors = {
 const reset = '\x1b[0m';
 
 function log(level, message, meta) {
+  // Keep test output readable — assertions, not request logs, are the signal.
+  if (process.env.NODE_ENV === 'test') return;
+
   const timestamp = new Date().toISOString();
   const color = levelColors[level] || '';
   const prefix = `${color}[${timestamp}] [${level.toUpperCase()}]${reset}`;

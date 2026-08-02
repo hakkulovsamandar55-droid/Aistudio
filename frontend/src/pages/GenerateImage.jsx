@@ -1,16 +1,33 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
+import StylePicker from '../components/StylePicker';
 import { generationApi } from '../api/generation.api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export default function GenerateImage() {
   const { refreshUser } = useAuth();
+  const toast = useToast();
+
   const [prompt, setPrompt] = useState('');
+  const [styles, setStyles] = useState([]);
+  const [style, setStyle] = useState('auto');
+  const [cost, setCost] = useState(2);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
+
+  useEffect(() => {
+    generationApi
+      .getStyles()
+      .then((res) => {
+        setStyles(res.data.data.image);
+        setCost(res.data.data.costs.IMAGE);
+      })
+      .catch(() => setStyles([]));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,9 +38,10 @@ export default function GenerateImage() {
     setResult(null);
 
     try {
-      const response = await generationApi.generateImage(prompt.trim());
+      const response = await generationApi.generateImage(prompt.trim(), { style });
       setResult(response.data.data);
       refreshUser();
+      toast.success('Rasm tayyor!');
     } catch (err) {
       if (err.response?.status === 402) {
         setShowInsufficientModal(true);
@@ -32,6 +50,34 @@ export default function GenerateImage() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      await generationApi.download(result.id, `ai-studio-${result.id}.png`);
+    } catch {
+      toast.error("Yuklab olishda xatolik yuz berdi.");
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      const response = await generationApi.setPublic(result.id, !result.isPublic);
+      setResult(response.data.data);
+      toast.success(response.data.data.isPublic ? "Galereyaga joylandi" : 'Galereyadan olib tashlandi');
+    } catch {
+      toast.error('Xatolik yuz berdi.');
+    }
+  };
+
+  const handleFavorite = async () => {
+    try {
+      const response = await generationApi.setFavorite(result.id, !result.isFavorite);
+      setResult(response.data.data);
+      toast.success(response.data.data.isFavorite ? "Sevimlilarga qo'shildi" : 'Sevimlilardan olindi');
+    } catch {
+      toast.error('Xatolik yuz berdi.');
     }
   };
 
@@ -48,20 +94,26 @@ export default function GenerateImage() {
         <p className="mt-1 text-gray-500">G'oyangizni yozing, AI Studio uni professional rasmga aylantiradi.</p>
 
         {!result && (
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              maxLength={500}
-              rows={5}
-              placeholder="G'oyangizni yozing... masalan: mushuk pitsa pishiryapti kosmosda"
-              className="w-full rounded-xl border border-gray-300 p-4 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
+          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+            <div>
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                maxLength={500}
+                rows={4}
+                disabled={loading}
+                placeholder="G'oyangizni yozing... masalan: mushuk pitsa pishiryapti kosmosda"
+                className="w-full rounded-xl border border-gray-300 p-4 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-gray-50"
+              />
+              <p className="mt-1 text-right text-xs text-gray-400">{prompt.length}/500</p>
+            </div>
+
+            <StylePicker styles={styles} value={style} onChange={setStyle} disabled={loading} />
 
             {error && <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</div>}
 
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">Bu 2 kredit sarflaydi</span>
+              <span className="text-sm text-gray-500">Bu {cost} kredit sarflaydi</span>
               <button
                 type="submit"
                 disabled={loading || !prompt.trim()}
@@ -83,16 +135,29 @@ export default function GenerateImage() {
         {result && result.status === 'COMPLETED' && (
           <div className="mt-8 space-y-4">
             <img src={result.resultUrl} alt={result.userPrompt} className="w-full rounded-xl shadow-lg" />
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={handleFavorite}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                {result.isFavorite ? '★ Sevimlida' : '☆ Sevimlilarga'}
+              </button>
+              <button
+                onClick={handleShare}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                {result.isPublic ? '🌍 Galereyada' : '🔒 Galereyaga joylash'}
+              </button>
+            </div>
+
             <div className="flex gap-3">
-              <a
-                href={result.resultUrl}
-                download
-                target="_blank"
-                rel="noreferrer"
+              <button
+                onClick={handleDownload}
                 className="flex-1 rounded-lg bg-indigo-600 py-2.5 text-center font-medium text-white hover:bg-indigo-700"
               >
                 Yuklab olish
-              </a>
+              </button>
               <button
                 onClick={reset}
                 className="flex-1 rounded-lg border border-gray-300 py-2.5 font-medium text-gray-700 hover:bg-gray-50"

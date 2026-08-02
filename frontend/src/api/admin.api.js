@@ -12,4 +12,8 @@ export const adminApi = {
   getPackages: () => api.get('/admin/packages'),
   createPackage: (data) => api.post('/admin/packages', data),
   updatePackage: (id, data) => api.patch(`/admin/packages/${id}`, data),
+  getAnnouncements: () => api.get('/admin/announcements'),
+  createAnnouncement: (message) => api.post('/admin/announcements', { message }),
+  updateAnnouncement: (id, data) => api.patch(`/admin/announcements/${id}`, data),
+  deleteAnnouncement: (id) => api.delete(`/admin/announcements/${id}`),
 };

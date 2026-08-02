@@ -2,10 +2,11 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const prisma = require('../config/db');
+const { BONUSES } = require('../config/credits.config');
+const accountService = require('./account.service');
 const AppError = require('../utils/AppError');
 
 const SALT_ROUNDS = 10;
-const SIGNUP_BONUS_CREDITS = 10;
 
 function signAccessToken(userId) {
   return jwt.sign({ sub: userId }, process.env.JWT_SECRET, {
@@ -26,17 +27,34 @@ function toPublicUser(user) {
     name: user.name,
     credits: user.credits,
     role: user.role,
+    referralCode: user.referralCode,
+    // Included on every auth payload (not just GET /me) so the dashboard can
+    // render the claim prompt immediately after signup or login.
+    dailyBonus: accountService.computeDailyBonusState(user.lastDailyBonusAt),
     createdAt: user.createdAt,
   };
 }
 
-async function registerUser(email, password, name) {
+async function registerUser(email, password, name, referralCode) {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     throw new AppError('An account with this email already exists', 409);
   }
 
+  // An unknown or self-referencing code is ignored rather than rejected —
+  // a mistyped code shouldn't block someone from signing up.
+  let referrer = null;
+  if (referralCode && referralCode.trim()) {
+    referrer = await prisma.user.findUnique({
+      where: { referralCode: referralCode.trim().toUpperCase() },
+      select: { id: true, isActive: true },
+    });
+    if (referrer && !referrer.isActive) referrer = null;
+  }
+
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+  const newReferralCode = await accountService.generateUniqueReferralCode();
+  const signupCredits = BONUSES.SIGNUP + (referrer ? BONUSES.REFERRED : 0);
 
   const user = await prisma.$transaction(async (tx) => {
     const created = await tx.user.create({
@@ -44,18 +62,47 @@ async function registerUser(email, password, name) {
         email,
         password: passwordHash,
         name,
-        credits: SIGNUP_BONUS_CREDITS,
+        credits: signupCredits,
+        referralCode: newReferralCode,
+        referredById: referrer ? referrer.id : null,
       },
     });
 
     await tx.creditTransaction.create({
       data: {
         userId: created.id,
-        amount: SIGNUP_BONUS_CREDITS,
+        amount: BONUSES.SIGNUP,
         type: 'SIGNUP_BONUS',
         description: 'Welcome bonus for signing up',
       },
     });
+
+    if (referrer) {
+      await tx.creditTransaction.create({
+        data: {
+          userId: created.id,
+          amount: BONUSES.REFERRED,
+          type: 'REFERRAL_BONUS',
+          description: 'Bonus for signing up with a referral code',
+        },
+      });
+
+      // Both sides of the referral are credited in the same transaction, so
+      // a failure can't leave one party paid and the other not.
+      await tx.user.update({
+        where: { id: referrer.id },
+        data: { credits: { increment: BONUSES.REFERRER } },
+      });
+
+      await tx.creditTransaction.create({
+        data: {
+          userId: referrer.id,
+          amount: BONUSES.REFERRER,
+          type: 'REFERRAL_BONUS',
+          description: `Referral bonus — ${email} signed up with your code`,
+        },
+      });
+    }
 
     return created;
   });
@@ -104,6 +151,9 @@ async function refreshAccessToken(refreshToken) {
   const user = await prisma.user.findUnique({ where: { id: payload.sub } });
   if (!user) {
     throw new AppError('User no longer exists', 401);
+  }
+  if (!user.isActive) {
+    throw new AppError('This account has been suspended', 403);
   }
 
   return {

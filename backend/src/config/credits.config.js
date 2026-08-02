@@ -28,4 +28,16 @@ const CREDIT_PACKAGES = [
   },
 ];
 
-module.exports = { CREDIT_COSTS, CREDIT_PACKAGES };
+// Free credits handed out by the growth features.
+const BONUSES = {
+  SIGNUP: 10,
+  // Paid to the existing user whose code was used...
+  REFERRER: 20,
+  // ...and to the new user on top of their signup bonus.
+  REFERRED: 10,
+  DAILY: 3,
+};
+
+const DAILY_BONUS_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
+module.exports = { CREDIT_COSTS, CREDIT_PACKAGES, BONUSES, DAILY_BONUS_COOLDOWN_MS };

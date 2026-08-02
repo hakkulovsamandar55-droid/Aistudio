@@ -41,6 +41,25 @@ Batafsil sozlash (migration, seed, Stripe webhook va h.k.) uchun
 [`backend/README.md`](backend/README.md) va
 [`frontend/README.md`](frontend/README.md) ga qarang.
 
+## Imkoniyatlar
+
+**Foydalanuvchi uchun**
+- Rasm va video generatsiya — 9 ta rasm va 6 ta video **uslub preseti** bilan
+  (fotorealistik, anime, kiberpank, kino, dron va h.k.)
+- Prompt Enhancer — oddiy jumlani professional promptga aylantiradi
+- **Galereya** — ishlarni ommaga ulashish va boshqalarnikini ko'rish
+- Tarix: qidiruv, filtrlar, sevimlilar, yuklab olish, o'chirish
+- **Kunlik bonus** (3 kredit) va **referal tizimi** (do'st uchun 20 kredit)
+- Sozlamalar: profil, parolni o'zgartirish, shaxsiy statistika
+- Parolni unutganda tiklash
+
+**Admin uchun** (`/admin`)
+- Statistika: 7 kunlik trend grafiklari, muvaffaqiyat foizi, muomaladagi kredit
+- Foydalanuvchilar: qidiruv, kredit qo'shish/ayirish, bloklash, admin qilish
+- Barcha generatsiyalarni ko'rish va filtrlash
+- Kredit paketlarini boshqarish
+- E'lonlar — barcha foydalanuvchilarga banner ko'rsatish
+
 ## Arxitektura
 
 - **AI Gateway** (`backend/src/services/ai-gateway/`) — har bir AI
@@ -52,6 +71,19 @@ Batafsil sozlash (migration, seed, Stripe webhook va h.k.) uchun
   muvaffaqiyatli yakunlangandan keyin yechiladi.
 - **Stripe** — kredit faqat Stripe webhook orqali (imzosi tekshirilgan
   holda) qo'shiladi, frontend'dan emas.
+- **Admin huquqi** har bir so'rovda bazadan qayta tekshiriladi, JWT'dagi
+  ma'lumotga ishonilmaydi.
+
+## Testlar
+
+Backend'da 96 ta avtomatik test bor (Jest + supertest, haqiqiy PostgreSQL
+va mock AI providerlar bilan):
+
+```bash
+cd backend
+cp .env.test.example .env.test
+npm test
+```
 
 ## Texnologiyalar
 

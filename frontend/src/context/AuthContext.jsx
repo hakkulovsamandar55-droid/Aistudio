@@ -43,8 +43,8 @@ export function AuthProvider({ children }) {
     return loggedInUser;
   }, []);
 
-  const register = useCallback(async (email, password, name) => {
-    const response = await authApi.register(email, password, name);
+  const register = useCallback(async (email, password, name, referralCode) => {
+    const response = await authApi.register(email, password, name, referralCode);
     const { user: newUser, accessToken, refreshToken } = response.data.data;
     tokenStorage.setTokens(accessToken, refreshToken);
     setUser(newUser);

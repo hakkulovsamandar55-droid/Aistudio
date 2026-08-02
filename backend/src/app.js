@@ -15,7 +15,9 @@ app.use(
     credentials: true,
   })
 );
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+if (process.env.NODE_ENV !== 'test') {
+  app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+}
 
 // Stripe webhook needs the raw request body to verify the signature, so it
 // must be mounted BEFORE express.json() strips it away and re-parses it.
@@ -32,6 +34,8 @@ app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/users', require('./routes/user.routes'));
 app.use('/api/generate', require('./routes/generation.routes'));
 app.use('/api/payments', require('./routes/payment.routes'));
+app.use('/api/gallery', require('./routes/gallery.routes'));
+app.use('/api/announcements', require('./routes/announcement.routes'));
 app.use('/api/admin', require('./routes/admin.routes'));
 
 app.use(notFoundHandler);

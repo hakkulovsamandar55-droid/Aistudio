@@ -1,5 +1,10 @@
 const rateLimit = require('express-rate-limit');
 
+// The automated suite fires many requests from a single address in seconds,
+// which is exactly what these limiters exist to stop — so they stand down
+// under NODE_ENV=test and nowhere else.
+const skipInTests = () => process.env.NODE_ENV === 'test';
+
 // Auth endpoints are a common target for credential stuffing / brute force,
 // so they get a tighter window than the rest of the API.
 const authLimiter = rateLimit({
@@ -7,6 +12,7 @@ const authLimiter = rateLimit({
   limit: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInTests,
   message: { success: false, error: 'Too many auth requests, please try again later.' },
 });
 
@@ -17,6 +23,7 @@ const generateLimiter = rateLimit({
   limit: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInTests,
   message: { success: false, error: 'Too many generation requests, please slow down.' },
 });
 

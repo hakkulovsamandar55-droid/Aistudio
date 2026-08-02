@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { to: '/admin/users', label: "Foydalanuvchilar" },
   { to: '/admin/generations', label: 'Generatsiyalar' },
   { to: '/admin/packages', label: 'Kredit paketlari' },
+  { to: '/admin/announcements', label: "E'lonlar" },
 ];
 
 export default function AdminLayout({ children }) {

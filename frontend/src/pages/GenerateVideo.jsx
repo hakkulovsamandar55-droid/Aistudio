@@ -1,27 +1,54 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
+import StylePicker from '../components/StylePicker';
 import { generationApi } from '../api/generation.api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 const POLL_INTERVAL_MS = 5000;
 
 export default function GenerateVideo() {
   const { refreshUser } = useAuth();
+  const toast = useToast();
+
   const [prompt, setPrompt] = useState('');
+  const [styles, setStyles] = useState([]);
+  const [style, setStyle] = useState('auto');
+  const [cost, setCost] = useState(20);
   const [submitting, setSubmitting] = useState(false);
   const [generation, setGeneration] = useState(null);
   const [error, setError] = useState('');
+  const [elapsed, setElapsed] = useState(0);
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
   const pollRef = useRef(null);
+  const timerRef = useRef(null);
 
   useEffect(() => {
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
+    generationApi
+      .getStyles()
+      .then((res) => {
+        setStyles(res.data.data.video);
+        setCost(res.data.data.costs.VIDEO);
+      })
+      .catch(() => setStyles([]));
   }, []);
 
+  const stopPolling = () => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    if (timerRef.current) clearInterval(timerRef.current);
+    pollRef.current = null;
+    timerRef.current = null;
+  };
+
+  // Any in-flight interval must be torn down when the component unmounts,
+  // otherwise it keeps polling (and calling setState) after navigation.
+  useEffect(() => stopPolling, []);
+
   const startPolling = (generationId) => {
+    setElapsed(0);
+    timerRef.current = setInterval(() => setElapsed((prev) => prev + 1), 1000);
+
     pollRef.current = setInterval(async () => {
       try {
         const response = await generationApi.getStatus(generationId);
@@ -29,13 +56,16 @@ export default function GenerateVideo() {
         setGeneration(updated);
 
         if (updated.status === 'COMPLETED' || updated.status === 'FAILED') {
-          clearInterval(pollRef.current);
-          pollRef.current = null;
-          if (updated.status === 'COMPLETED') refreshUser();
+          stopPolling();
+          if (updated.status === 'COMPLETED') {
+            refreshUser();
+            toast.success('Video tayyor!');
+          } else {
+            toast.error('Video yaratilmadi — kredit yechilmadi.');
+          }
         }
       } catch (err) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
+        stopPolling();
         setError('Holatni tekshirishda xatolik yuz berdi.');
       }
     }, POLL_INTERVAL_MS);
@@ -50,7 +80,7 @@ export default function GenerateVideo() {
     setGeneration(null);
 
     try {
-      const response = await generationApi.generateVideo(prompt.trim());
+      const response = await generationApi.generateVideo(prompt.trim(), { style });
       const { generationId, status } = response.data.data;
       setGeneration({ id: generationId, status, userPrompt: prompt.trim() });
       startPolling(generationId);
@@ -65,9 +95,26 @@ export default function GenerateVideo() {
     }
   };
 
+  const handleDownload = async () => {
+    try {
+      await generationApi.download(generation.id, `ai-studio-${generation.id}.mp4`);
+    } catch {
+      toast.error('Yuklab olishda xatolik yuz berdi.');
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      const response = await generationApi.setPublic(generation.id, !generation.isPublic);
+      setGeneration(response.data.data);
+      toast.success(response.data.data.isPublic ? 'Galereyaga joylandi' : 'Galereyadan olib tashlandi');
+    } catch {
+      toast.error('Xatolik yuz berdi.');
+    }
+  };
+
   const reset = () => {
-    if (pollRef.current) clearInterval(pollRef.current);
-    pollRef.current = null;
+    stopPolling();
     setGeneration(null);
     setPrompt('');
     setError('');
@@ -82,20 +129,26 @@ export default function GenerateVideo() {
         <p className="mt-1 text-gray-500">G'oyangizni yozing, AI Studio uni videoga aylantiradi.</p>
 
         {!generation && (
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              maxLength={500}
-              rows={5}
-              placeholder="G'oyangizni yozing... masalan: mushuk pitsa pishiryapti kosmosda"
-              className="w-full rounded-xl border border-gray-300 p-4 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
+          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+            <div>
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                maxLength={500}
+                rows={4}
+                disabled={submitting}
+                placeholder="G'oyangizni yozing... masalan: mushuk pitsa pishiryapti kosmosda"
+                className="w-full rounded-xl border border-gray-300 p-4 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-gray-50"
+              />
+              <p className="mt-1 text-right text-xs text-gray-400">{prompt.length}/500</p>
+            </div>
+
+            <StylePicker styles={styles} value={style} onChange={setStyle} disabled={submitting} />
 
             {error && <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</div>}
 
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">Bu 20 kredit sarflaydi</span>
+              <span className="text-sm text-gray-500">Bu {cost} kredit sarflaydi</span>
               <button
                 type="submit"
                 disabled={submitting || !prompt.trim()}
@@ -113,6 +166,9 @@ export default function GenerateVideo() {
             <p className="text-center text-gray-500">
               Video yaratilmoqda, bu bir necha daqiqa vaqt olishi mumkin...
             </p>
+            <p className="text-sm text-gray-400">
+              {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')} o'tdi
+            </p>
           </div>
         )}
 
@@ -120,16 +176,21 @@ export default function GenerateVideo() {
           <div className="mt-8 space-y-4">
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <video src={generation.resultUrl} controls className="w-full rounded-xl shadow-lg" />
+
+            <button
+              onClick={handleShare}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              {generation.isPublic ? '🌍 Galereyada' : '🔒 Galereyaga joylash'}
+            </button>
+
             <div className="flex gap-3">
-              <a
-                href={generation.resultUrl}
-                download
-                target="_blank"
-                rel="noreferrer"
+              <button
+                onClick={handleDownload}
                 className="flex-1 rounded-lg bg-indigo-600 py-2.5 text-center font-medium text-white hover:bg-indigo-700"
               >
                 Yuklab olish
-              </a>
+              </button>
               <button
                 onClick={reset}
                 className="flex-1 rounded-lg border border-gray-300 py-2.5 font-medium text-gray-700 hover:bg-gray-50"
@@ -142,8 +203,8 @@ export default function GenerateVideo() {
 
         {generation?.status === 'FAILED' && (
           <div className="mt-8 rounded-xl bg-red-50 p-6 text-center text-red-600">
-            <p>Xatolik yuz berdi: {generation.errorMessage || 'Noma\'lum xato'}</p>
-            <p className="mt-1 text-sm text-red-500">Kredit qaytarildi.</p>
+            <p>Xatolik yuz berdi: {generation.errorMessage || "Noma'lum xato"}</p>
+            <p className="mt-1 text-sm text-red-500">Kredit yechilmadi.</p>
             <button onClick={reset} className="mt-4 w-full rounded-lg bg-red-600 py-2.5 font-medium text-white">
               Qaytadan urinish
             </button>

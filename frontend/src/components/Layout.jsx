@@ -4,7 +4,9 @@ import { useAuth } from '../context/AuthContext';
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: '🏠' },
   { to: '/history', label: 'Tarix', icon: '🕘' },
-  { to: '/billing', label: 'Kredit sotib olish', icon: '💳' },
+  { to: '/gallery', label: 'Galereya', icon: '🌍' },
+  { to: '/billing', label: 'Kredit', icon: '💳' },
+  { to: '/settings', label: 'Sozlamalar', icon: '⚙️' },
 ];
 
 export default function Layout({ children }) {

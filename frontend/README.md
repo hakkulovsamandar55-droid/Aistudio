@@ -40,19 +40,38 @@ React (Vite) single-page app for AI Studio.
 ```
 src/
   api/         axios client + per-resource API modules
-  components/  shared UI (Layout, ProtectedRoute)
-  context/     AuthContext (user/session state)
-  pages/       route-level pages (Login, Dashboard, GenerateImage, ...)
+  components/  shared UI (Layout, AdminLayout, StylePicker, banners, guards)
+  context/     AuthContext (session state) + ToastContext (notifications)
+  pages/       route-level pages
+    admin/     admin-only pages
 ```
 
 ## Routes
 
-| Path | Page | Auth required |
+| Path | Page | Access |
 |---|---|---|
-| `/` | Landing page | No |
-| `/login`, `/register` | Auth | No |
-| `/dashboard` | Credit balance + quick actions | Yes |
-| `/generate/image` | Image generation | Yes |
-| `/generate/video` | Video generation (polling) | Yes |
-| `/billing`, `/billing/success`, `/billing/cancel` | Stripe checkout | Yes (billing only) |
-| `/history` | Past generations | Yes |
+| `/` | Landing page | Public |
+| `/gallery` | Community gallery of shared work | Public |
+| `/login`, `/register` | Auth (register accepts `?ref=CODE`) | Public |
+| `/forgot-password`, `/reset-password` | Password recovery | Public |
+| `/billing/success`, `/billing/cancel` | Stripe return pages | Public |
+| `/dashboard` | Balance, daily bonus, referrals, recent work | User |
+| `/generate/image` | Image generation with style presets | User |
+| `/generate/video` | Video generation with polling | User |
+| `/history` | Past generations: search, filters, favourite/share/delete | User |
+| `/billing` | Credit packages → Stripe checkout | User |
+| `/settings` | Profile, password, referral code, personal stats | User |
+| `/admin`, `/admin/users`, `/admin/generations`, `/admin/packages`, `/admin/announcements` | Admin panel | Admin |
+
+Protected routes sit behind `ProtectedRoute`; admin routes behind
+`AdminRoute`, which redirects non-admins to `/dashboard`. These guards are a
+UX convenience — the server enforces the same rules independently.
+
+## Notes
+
+- **Downloads** go through the API's download endpoint and are saved via a
+  blob URL, because a cross-origin `<a download>` is ignored by browsers.
+- **Toasts** come from `useToast()` (`success` / `error` / `info`).
+- **Token refresh** is automatic: a 401 triggers one shared refresh call and
+  the original request is retried; if the refresh itself fails, an
+  `auth:session-expired` event clears the session.

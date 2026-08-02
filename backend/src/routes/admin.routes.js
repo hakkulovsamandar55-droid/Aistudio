@@ -21,4 +21,9 @@ router.get('/packages', adminController.getPackages);
 router.post('/packages', adminController.createPackage);
 router.patch('/packages/:id', adminController.updatePackage);
 
+router.get('/announcements', adminController.getAnnouncements);
+router.post('/announcements', adminController.createAnnouncement);
+router.patch('/announcements/:id', adminController.updateAnnouncement);
+router.delete('/announcements/:id', adminController.deleteAnnouncement);
+
 module.exports = router;

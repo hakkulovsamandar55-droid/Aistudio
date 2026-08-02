@@ -1,4 +1,5 @@
 const authService = require('../services/auth.service');
+const accountService = require('../services/account.service');
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
 
@@ -17,10 +18,15 @@ function assertValidCredentials({ email, password, name }) {
 }
 
 const register = asyncHandler(async (req, res) => {
-  const { email, password, name } = req.body;
+  const { email, password, name, referralCode } = req.body;
   assertValidCredentials({ email, password, name });
 
-  const result = await authService.registerUser(email.trim().toLowerCase(), password, name.trim());
+  const result = await authService.registerUser(
+    email.trim().toLowerCase(),
+    password,
+    name.trim(),
+    referralCode
+  );
   res.status(201).json({ success: true, data: result });
 });
 
@@ -40,4 +46,29 @@ const refresh = asyncHandler(async (req, res) => {
   res.json({ success: true, data: result });
 });
 
-module.exports = { register, login, refresh };
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email || !EMAIL_REGEX.test(email)) {
+    throw new AppError('A valid email is required', 400);
+  }
+
+  const { token } = await accountService.requestPasswordReset(email.trim().toLowerCase());
+
+  // The response is intentionally identical whether or not the address exists.
+  // Outside production the token comes back inline so the flow is testable
+  // without an email provider wired up.
+  const payload = { message: 'If that email is registered, a reset link has been sent.' };
+  if (token && process.env.NODE_ENV !== 'production') {
+    payload.devResetToken = token;
+  }
+
+  res.json({ success: true, data: payload });
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token, newPassword } = req.body;
+  await accountService.resetPassword(token, newPassword);
+  res.json({ success: true, data: { reset: true } });
+});
+
+module.exports = { register, login, refresh, forgotPassword, resetPassword };

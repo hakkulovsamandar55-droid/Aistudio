@@ -27,6 +27,10 @@ export default function Home() {
           </Link>
         )}
       </div>
+
+      <Link to="/gallery" className="mt-8 text-sm font-medium text-indigo-600 hover:underline">
+        🌍 Galereyani ko'rish — boshqalar nima yaratgan
+      </Link>
     </div>
   );
 }

@@ -63,6 +63,26 @@ const updatePackage = asyncHandler(async (req, res) => {
   res.json({ success: true, data: pkg });
 });
 
+const getAnnouncements = asyncHandler(async (req, res) => {
+  const items = await adminService.listAnnouncements();
+  res.json({ success: true, data: items });
+});
+
+const createAnnouncement = asyncHandler(async (req, res) => {
+  const item = await adminService.createAnnouncement(req.body.message);
+  res.status(201).json({ success: true, data: item });
+});
+
+const updateAnnouncement = asyncHandler(async (req, res) => {
+  const item = await adminService.updateAnnouncement(req.params.id, req.body);
+  res.json({ success: true, data: item });
+});
+
+const deleteAnnouncement = asyncHandler(async (req, res) => {
+  await adminService.deleteAnnouncement(req.params.id);
+  res.json({ success: true, data: { id: req.params.id, deleted: true } });
+});
+
 module.exports = {
   getStats,
   getUsers,
@@ -74,4 +94,8 @@ module.exports = {
   getPackages,
   createPackage,
   updatePackage,
+  getAnnouncements,
+  createAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement,
 };
