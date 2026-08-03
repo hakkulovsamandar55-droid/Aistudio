@@ -96,6 +96,24 @@ wan/kling/runway/veo in `src/services/ai-gateway/videoTiers.js`) rather than a
 single `VIDEO_PROVIDER` pin — see that file for the fallback-to-cheaper-tier
 behavior when a tier's provider has no credentials.
 
+## Health checks and shutdown
+
+| Endpoint | What it does |
+|---|---|
+| `GET /health`, `GET /api/health` | Deep check — actually queries Postgres, pings Redis and touches the storage bucket. `200` healthy, `503` degraded, with per-dependency detail. |
+| `GET /health/live` | Liveness only. No dependency calls, safe to poll every few seconds. |
+
+The database is the one hard dependency. Redis and S3 fail the check only when
+they're *configured but broken* — unconfigured means "not deployed that way",
+which is a choice rather than an outage. Each probe has a 3s timeout so a hung
+dependency degrades the check instead of hanging it.
+
+On `SIGTERM`/`SIGINT` both the API and the worker shut down gracefully: stop
+accepting new connections, let in-flight requests (or jobs) finish, flush
+Sentry, then close Redis and Postgres. `SHUTDOWN_TIMEOUT_MS` (default 15s) is
+the backstop so one stuck connection can't hold the process open until the
+runtime SIGKILLs it — which would skip the cleanup entirely.
+
 ## File storage
 
 `src/services/storage/` is the only place that knows where bytes live, behind

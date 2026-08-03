@@ -49,9 +49,15 @@ app.use(
   express.static(path.join(__dirname, '..', 'uploads'))
 );
 
-app.get('/api/health', (req, res) => {
-  res.json({ success: true, status: 'ok', timestamp: new Date().toISOString() });
-});
+const healthController = require('./controllers/health.controller');
+
+// Deep check (DB + Redis + storage), mounted at both paths: /api/health is
+// what the frontend and existing monitors already call, /health is where
+// load balancers and deploy gates look by convention.
+app.get('/api/health', healthController.health);
+app.get('/health', healthController.health);
+// Liveness only — no dependency calls, safe to poll aggressively.
+app.get('/health/live', healthController.liveness);
 
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/users', require('./routes/user.routes'));
