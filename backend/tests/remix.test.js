@@ -1,7 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const { request, app, prisma, registerUser, grantCredits, auth } = require('./helpers');
-const { REMIX_DIR } = require('../src/middleware/upload.middleware');
+const storage = require('../src/services/storage');
+
+const REMIX_SOURCE_ROOT = path.join(storage.UPLOAD_ROOT, 'remix-source');
 
 // A minimal valid 1x1 PNG, so multer/sharp-less validation accepts it as a
 // real image without needing a fixture file on disk.
@@ -10,8 +12,18 @@ const TINY_PNG = Buffer.from(
   'base64'
 );
 
-function filesInRemixDir() {
-  return fs.readdirSync(REMIX_DIR).filter((name) => !name.startsWith('.'));
+/**
+ * Every source image the storage layer is still holding. The upload itself is
+ * transient — it exists only for the length of the transform — so after any
+ * request, successful or rejected, this must come back empty.
+ */
+function storedRemixSources(dir = REMIX_SOURCE_ROOT) {
+  if (!fs.existsSync(dir)) return [];
+
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    if (entry.isDirectory()) return storedRemixSources(path.join(dir, entry.name));
+    return entry.name.startsWith('.') ? [] : [path.join(dir, entry.name)];
+  });
 }
 
 describe('Remix (image upload + style transformation)', () => {
@@ -48,8 +60,8 @@ describe('Remix (image upload + style transformation)', () => {
     const after = await prisma.user.findUnique({ where: { id: user.id } });
     expect(after.credits).toBe(before.credits - 2);
 
-    // The uploaded source file must not remain on disk after processing.
-    expect(filesInRemixDir()).toHaveLength(0);
+    // The uploaded source must not linger in storage after processing.
+    expect(storedRemixSources()).toHaveLength(0);
   });
 
   it('rejects an unknown style and leaves no orphaned file', async () => {
@@ -63,7 +75,7 @@ describe('Remix (image upload + style transformation)', () => {
       .attach('image', TINY_PNG, { filename: 'photo.png', contentType: 'image/png' });
 
     expect(res.status).toBe(400);
-    expect(filesInRemixDir()).toHaveLength(0);
+    expect(storedRemixSources()).toHaveLength(0);
   });
 
   it('rejects a disallowed file type', async () => {
@@ -77,7 +89,7 @@ describe('Remix (image upload + style transformation)', () => {
       .attach('image', Buffer.from('not an image'), { filename: 'file.txt', contentType: 'text/plain' });
 
     expect(res.status).toBe(400);
-    expect(filesInRemixDir()).toHaveLength(0);
+    expect(storedRemixSources()).toHaveLength(0);
   });
 
   it('rejects a request with no file', async () => {
@@ -106,7 +118,7 @@ describe('Remix (image upload + style transformation)', () => {
       .attach('image', TINY_PNG, { filename: 'photo.png', contentType: 'image/png' });
 
     expect(res.status).toBe(429);
-    expect(filesInRemixDir()).toHaveLength(0);
+    expect(storedRemixSources()).toHaveLength(0);
   });
 
   it('blocks remix when the user has insufficient credits, before any file is written', async () => {
@@ -120,7 +132,7 @@ describe('Remix (image upload + style transformation)', () => {
       .attach('image', TINY_PNG, { filename: 'photo.png', contentType: 'image/png' });
 
     expect(res.status).toBe(402);
-    expect(filesInRemixDir()).toHaveLength(0);
+    expect(storedRemixSources()).toHaveLength(0);
   });
 
   it('the remixed image is served back from /uploads with a cross-origin-friendly header', async () => {

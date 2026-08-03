@@ -1,25 +1,19 @@
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
 const multer = require('multer');
 const AppError = require('../utils/AppError');
 
-const UPLOAD_ROOT = path.join(__dirname, '..', '..', 'uploads');
-const REMIX_DIR = path.join(UPLOAD_ROOT, 'remix');
-
-fs.mkdirSync(REMIX_DIR, { recursive: true });
-
-const MAX_FILE_BYTES = 8 * 1024 * 1024; // 8MB — generous for a phone photo, small enough to keep disk/cost bounded
+const MAX_FILE_BYTES = 8 * 1024 * 1024; // 8MB — generous for a phone photo, small enough to keep cost bounded
 const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const EXTENSION_BY_MIME = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, REMIX_DIR),
-  filename: (req, file, cb) => {
-    const ext = EXTENSION_BY_MIME[file.mimetype] || path.extname(file.originalname) || '';
-    cb(null, `${crypto.randomUUID()}${ext}`);
-  },
-});
+/**
+ * Uploads are held in memory rather than written straight to this server's
+ * disk, then handed to the storage layer (S3 in production, disk locally).
+ * Writing to local disk here would tie a user's file to one machine: a
+ * redeploy wipes it and a second API instance can't see it.
+ *
+ * The 8MB cap is what makes buffering safe — multer rejects anything larger
+ * before it is fully read.
+ */
+const storage = multer.memoryStorage();
 
 function fileFilter(req, file, cb) {
   if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
@@ -55,4 +49,4 @@ function handleRemixUpload(req, res, next) {
   });
 }
 
-module.exports = { handleRemixUpload, UPLOAD_ROOT, REMIX_DIR, MAX_FILE_BYTES };
+module.exports = { handleRemixUpload, MAX_FILE_BYTES, ALLOWED_MIME_TYPES };

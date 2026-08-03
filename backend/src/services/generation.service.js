@@ -1,4 +1,7 @@
-const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const crypto = require('crypto');
+const fsPromises = require('fs/promises');
 const prisma = require('../config/db');
 const { CREDIT_COSTS } = require('../config/credits.config');
 const { applyStyle } = require('../config/styles.config');
@@ -7,6 +10,7 @@ const creditService = require('./credit.service');
 const promptEnhancer = require('./promptEnhancer.service');
 const { imageGateway, videoGateway } = require('./ai-gateway');
 const { enqueueVideoGeneration } = require('../queues/videoGeneration.queue');
+const storage = require('./storage');
 const logger = require('../utils/logger');
 const AppError = require('../utils/AppError');
 
@@ -41,10 +45,11 @@ async function createImageGeneration(userId, userPrompt, options = {}) {
     });
 
     const { url, provider } = await imageGateway.generateImage(styledPrompt, options);
+    const resultUrl = await storage.persistGenerationResult(url, { type: 'IMAGE' });
 
     generation = await prisma.generation.update({
       where: { id: generation.id },
-      data: { status: 'COMPLETED', resultUrl: url, provider, creditsUsed: requiredCredits },
+      data: { status: 'COMPLETED', resultUrl, provider, creditsUsed: requiredCredits },
     });
 
     // Credits are only spent once generation actually succeeds, so a failed
@@ -71,7 +76,13 @@ async function createImageGeneration(userId, userPrompt, options = {}) {
  * and counted against the IMAGE module (same cost, same daily quota) since
  * it produces the same kind of asset — no need for a separate credit type.
  *
- * @param {object} upload - { path: absolute file path, url: public URL }
+ * The upload arrives as a buffer (multer holds it in memory) and is needed in
+ * two shapes: a public URL for providers that fetch the source, and a local
+ * path for those whose SDK wants a readable file. Both are transient — the
+ * source is only interesting for the length of the transform — so both are
+ * cleaned up in `finally` regardless of outcome.
+ *
+ * @param {object} upload - { buffer: Buffer, contentType: string }
  */
 async function createRemixGeneration(userId, upload, styleId) {
   const requiredCredits = CREDIT_COSTS.IMAGE;
@@ -92,16 +103,30 @@ async function createRemixGeneration(userId, upload, styleId) {
     },
   });
 
+  const extension = storage.extensionFor(upload.contentType, 'png');
+  const tempPath = path.join(os.tmpdir(), `remix-${crypto.randomUUID()}.${extension}`);
+  let stored = null;
+
   try {
+    await fsPromises.writeFile(tempPath, upload.buffer);
+    stored = await storage.putBuffer(upload.buffer, {
+      prefix: 'remix-source',
+      contentType: upload.contentType,
+    });
+
     const prompt = remixStyles.buildRemixPrompt(styleId);
 
-    const { url, provider } = await imageGateway.remixImage(upload.url, prompt, {
-      sourceImagePath: upload.path,
+    const { url, provider } = await imageGateway.remixImage(stored.url, prompt, {
+      sourceImagePath: tempPath,
     });
+
+    // Providers hand back a URL of their own that expires; keep our own copy
+    // so the user's library doesn't rot into broken links.
+    const resultUrl = await storage.persistGenerationResult(url, { type: 'IMAGE' });
 
     generation = await prisma.generation.update({
       where: { id: generation.id },
-      data: { status: 'COMPLETED', enhancedPrompt: prompt, resultUrl: url, provider, creditsUsed: requiredCredits },
+      data: { status: 'COMPLETED', enhancedPrompt: prompt, resultUrl, provider, creditsUsed: requiredCredits },
     });
 
     await creditService.deductCredits(userId, requiredCredits, 'GENERATION_IMAGE', `Remix: ${label}`);
@@ -114,11 +139,12 @@ async function createRemixGeneration(userId, upload, styleId) {
     });
     throw err;
   } finally {
-    // The source upload is only needed for the duration of the transform —
-    // nothing else references it, so it doesn't need to linger on disk.
-    fs.unlink(upload.path, (err) => {
-      if (err) logger.warn(`Could not remove remix upload ${upload.path}: ${err.message}`);
-    });
+    fsPromises.unlink(tempPath).catch(() => {});
+    if (stored) {
+      storage.remove(stored.key).catch((err) => {
+        logger.warn(`Could not remove remix source ${stored.key}: ${err.message}`);
+      });
+    }
   }
 }
 
@@ -173,10 +199,11 @@ async function processVideoGeneration({ generationId, userId, userPrompt, requir
   });
 
   const { url, provider } = await videoGateway.generateVideo(styledPrompt, options);
+  const resultUrl = await storage.persistGenerationResult(url, { type: 'VIDEO' });
 
   await prisma.generation.update({
     where: { id: generationId },
-    data: { status: 'COMPLETED', resultUrl: url, provider, creditsUsed: requiredCredits },
+    data: { status: 'COMPLETED', resultUrl, provider, creditsUsed: requiredCredits },
   });
 
   // Same rule as images: video is expensive, so credits are only deducted

@@ -27,9 +27,11 @@ app.use('/api/webhooks', webhookRoutes);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serves Remix source uploads. The frontend (a different origin in dev) needs
-// to <img>-embed these, which helmet's default same-origin Cross-Origin-
-// Resource-Policy would otherwise block.
+// Serves files held by the local storage driver. With STORAGE_DRIVER=s3 the
+// bucket serves them instead and nothing lands here, but the route stays
+// mounted so a driver switch doesn't strand previously-stored files.
+// The frontend (a different origin in dev) needs to <img>-embed these, which
+// helmet's default same-origin Cross-Origin-Resource-Policy would block.
 app.use(
   '/uploads',
   (req, res, next) => {

@@ -96,6 +96,35 @@ wan/kling/runway/veo in `src/services/ai-gateway/videoTiers.js`) rather than a
 single `VIDEO_PROVIDER` pin — see that file for the fallback-to-cheaper-tier
 behavior when a tier's provider has no credentials.
 
+## File storage
+
+`src/services/storage/` is the only place that knows where bytes live, behind
+`STORAGE_DRIVER`:
+
+- **`local`** (default) — writes to `backend/uploads/`, served from `/uploads`.
+  Fine for dev; in production those files die with the server and a second
+  instance can't see them.
+- **`s3`** — any S3-compatible bucket. Cloudflare R2 and DigitalOcean Spaces
+  are the sensible picks: neither charges for egress, and generated video is
+  almost all egress. Missing credentials fall back to `local` with an error
+  logged rather than taking the API down.
+
+Two things go through it:
+
+1. **Remix uploads.** multer holds them in memory (`memoryStorage`) instead of
+   writing to this server's disk, then the storage layer takes them. They're
+   transient — deleted in `finally` once the transform finishes either way.
+   One provider SDK needs a readable file rather than a buffer, so a temp file
+   is written to the OS temp dir for the length of that call only.
+2. **Generation results.** Providers return URLs that expire — OpenAI image
+   URLs within the hour, video CDNs not much later — so with the `s3` driver
+   each finished result is copied into our own bucket and *our* URL is what
+   gets stored. Without this a user's library quietly rots into broken links.
+   The copy fails soft: if it doesn't work the provider URL is kept, because a
+   link that works for an hour beats losing the generation they just paid for.
+   Under the `local` driver this copy is skipped entirely — same disk, no
+   durability gained.
+
 ## Background jobs (video generation)
 
 Video renders take minutes, so they run as background jobs rather than inside
