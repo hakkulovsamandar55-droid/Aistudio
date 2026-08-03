@@ -59,6 +59,11 @@ const QUEUE_STATE_LABELS = {
   paused: "To'xtatilgan",
 };
 
+const QUEUE_LABELS = {
+  projectRun: 'Chat (Magic Mode)',
+  videoGeneration: 'Video buyurtma',
+};
+
 /**
  * Background-job health. Without Redis the API still runs jobs in-process,
  * which works but loses anything in flight on restart — so that state is
@@ -94,14 +99,30 @@ function QueuePanel({ queue }) {
       )}
 
       {queue.counts && (
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-          {Object.entries(QUEUE_STATE_LABELS).map(([key, label]) => (
-            <div key={key} className="rounded-lg bg-[#faf7f1] p-3 text-center">
-              <p className="text-lg font-bold text-[#1c1a17]">{queue.counts[key] ?? 0}</p>
-              <p className="mt-0.5 text-[11px] text-[#6d655a]">{label}</p>
+        <>
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+            {Object.entries(QUEUE_STATE_LABELS).map(([key, label]) => (
+              <div key={key} className="rounded-lg bg-[#faf7f1] p-3 text-center">
+                <p className="text-lg font-bold text-[#1c1a17]">{queue.counts[key] ?? 0}</p>
+                <p className="mt-0.5 text-[11px] text-[#6d655a]">{label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Per-queue split, so a backlog can be traced to the path causing it. */}
+          {queue.queues && (
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {Object.entries(QUEUE_LABELS).map(([name, label]) => (
+                <div key={name} className="flex justify-between rounded-lg bg-[#faf7f1] px-3 py-2 text-xs">
+                  <span className="text-[#6d655a]">{label}</span>
+                  <span className="text-[#37322b]">
+                    {queue.queues[name]?.waiting ?? 0} navbatda · {queue.queues[name]?.active ?? 0} ishlamoqda
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {queue.stuck > 0 && (

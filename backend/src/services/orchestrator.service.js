@@ -6,6 +6,7 @@ const creditService = require('./credit.service');
 const promptEnhancer = require('./promptEnhancer.service');
 const intentAnalyzer = require('./intentAnalyzer.service');
 const taskPlanner = require('./taskPlanner.service');
+const { enqueueProjectRun } = require('../queues/projectRun.queue');
 const logger = require('../utils/logger');
 const AppError = require('../utils/AppError');
 
@@ -80,13 +81,53 @@ async function createProject(userId, userRequest) {
     },
   });
 
-  // Fire and forget: the same pattern as video generation, and structured so
-  // it can move onto a real job queue without changing callers.
-  runProject(project.id, userId, intent, tasks).catch((err) => {
-    logger.error(`Unhandled error running project ${project.id}`, err);
-  });
+  // Onto the durable queue, keyed by project id, so a restart mid-run doesn't
+  // strand every generation in PROCESSING with the project stuck on RUNNING.
+  await enqueueProjectRun({ projectId: project.id, userId, intent, tasks });
 
   return { project, tasks, totalCredits };
+}
+
+/**
+ * Closes out a run that died partway. Each asset is charged only once it
+ * succeeds, so the completed ones stay paid for and keep their results; every
+ * generation still in flight is failed and refunded whatever it was charged.
+ *
+ * Safe to call on an already-finished project — it leaves it alone.
+ */
+async function failProject(projectId, errorMessage) {
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { id: true, status: true },
+  });
+
+  if (!project || !['RUNNING', 'PLANNING'].includes(project.status)) return null;
+
+  const { failVideoGeneration } = require('./generation.service');
+  const stranded = await prisma.generation.findMany({
+    where: { projectId, status: { in: ['PROCESSING', 'PENDING'] } },
+    select: { id: true },
+  });
+
+  for (const generation of stranded) {
+    // eslint-disable-next-line no-await-in-loop
+    await failVideoGeneration(generation.id, errorMessage || 'Project run failed');
+  }
+
+  const completed = await prisma.generation.count({
+    where: { projectId, status: 'COMPLETED' },
+  });
+
+  const updated = await prisma.project.update({
+    where: { id: projectId },
+    data: { status: completed > 0 ? 'PARTIAL' : 'FAILED' },
+  });
+
+  logger.error(
+    `Project ${projectId} closed out as ${updated.status}: ${errorMessage} (${stranded.length} generation(s) refunded)`
+  );
+
+  return updated;
 }
 
 async function runProject(projectId, userId, intent, tasks) {
@@ -279,4 +320,12 @@ async function deleteProject(projectId, userId) {
   return true;
 }
 
-module.exports = { preview, createProject, getProject, listProjects, deleteProject, runProject };
+module.exports = {
+  preview,
+  createProject,
+  getProject,
+  listProjects,
+  deleteProject,
+  runProject,
+  failProject,
+};

@@ -260,3 +260,141 @@ describe('startup reconciliation', () => {
     expect(row.status).toBe('PROCESSING');
   });
 });
+
+describe('project runs (the chat path)', () => {
+  const orchestrator = require('../src/services/orchestrator.service');
+
+  async function createRunningProject(userId) {
+    return prisma.project.create({
+      data: {
+        userId,
+        title: 'Test campaign',
+        userRequest: 'reklama uchun video',
+        goal: 'advert',
+        intent: {},
+        plan: [],
+        status: 'RUNNING',
+      },
+    });
+  }
+
+  it('closes out a crashed run and refunds only what was in flight', async () => {
+    const { user } = await registerUser();
+    await grantCredits(user.id, 100);
+    const project = await createRunningProject(user.id);
+
+    // One asset finished and was paid for; one was still rendering.
+    const done = await prisma.generation.create({
+      data: {
+        userId: user.id,
+        projectId: project.id,
+        type: 'SCRIPT',
+        userPrompt: 'x',
+        status: 'COMPLETED',
+        provider: 'mock',
+        resultText: 'a finished script',
+        creditsUsed: 1,
+      },
+    });
+    const inFlight = await prisma.generation.create({
+      data: {
+        userId: user.id,
+        projectId: project.id,
+        type: 'VIDEO',
+        userPrompt: 'x',
+        status: 'PROCESSING',
+        provider: 'kling',
+        creditsUsed: 20,
+      },
+    });
+
+    const before = await prisma.user.findUnique({ where: { id: user.id } });
+    await orchestrator.failProject(project.id, 'worker died');
+    const after = await prisma.user.findUnique({ where: { id: user.id } });
+
+    // Only the in-flight asset is refunded — the finished one was delivered.
+    expect(after.credits).toBe(before.credits + 20);
+
+    expect((await prisma.generation.findUnique({ where: { id: done.id } })).status).toBe('COMPLETED');
+    expect((await prisma.generation.findUnique({ where: { id: inFlight.id } })).status).toBe('FAILED');
+
+    // Something was delivered, so the project is PARTIAL rather than FAILED.
+    expect((await prisma.project.findUnique({ where: { id: project.id } })).status).toBe('PARTIAL');
+  });
+
+  it('marks a run that produced nothing as FAILED', async () => {
+    const { user } = await registerUser();
+    const project = await createRunningProject(user.id);
+    await prisma.generation.create({
+      data: {
+        userId: user.id,
+        projectId: project.id,
+        type: 'VIDEO',
+        userPrompt: 'x',
+        status: 'PROCESSING',
+        provider: 'kling',
+      },
+    });
+
+    await orchestrator.failProject(project.id, 'nothing worked');
+
+    expect((await prisma.project.findUnique({ where: { id: project.id } })).status).toBe('FAILED');
+  });
+
+  it('leaves an already-finished project alone', async () => {
+    const { user } = await registerUser();
+    const project = await prisma.project.create({
+      data: {
+        userId: user.id,
+        title: 'Done',
+        userRequest: 'x',
+        goal: 'advert',
+        intent: {},
+        plan: [],
+        status: 'COMPLETED',
+      },
+    });
+
+    expect(await orchestrator.failProject(project.id, 'late event')).toBeNull();
+    expect((await prisma.project.findUnique({ where: { id: project.id } })).status).toBe('COMPLETED');
+  });
+
+  it('reconciliation closes out a project abandoned by a crash', async () => {
+    const { user } = await registerUser();
+    await grantCredits(user.id, 100);
+    const project = await createRunningProject(user.id);
+    await prisma.generation.create({
+      data: {
+        userId: user.id,
+        projectId: project.id,
+        type: 'VIDEO',
+        userPrompt: 'x',
+        status: 'PROCESSING',
+        provider: 'kling',
+        creditsUsed: 20,
+      },
+    });
+    await prisma.$executeRawUnsafe(
+      `UPDATE projects SET updated_at = NOW() - INTERVAL '1 hour' WHERE id = $1`,
+      project.id
+    );
+    const before = await prisma.user.findUnique({ where: { id: user.id } });
+
+    const result = await reconciliation.reconcileStuckProjects();
+
+    expect(result.failed).toBe(1);
+    expect((await prisma.project.findUnique({ where: { id: project.id } })).status).toBe('FAILED');
+    const after = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(after.credits).toBe(before.credits + 20);
+  });
+
+  it('leaves a project that only just started alone', async () => {
+    const { user } = await registerUser();
+    const project = await createRunningProject(user.id);
+
+    const result = await reconciliation.reconcileStuckProjects();
+
+    expect(result.checked).toBe(0);
+    expect((await prisma.project.findUnique({ where: { id: project.id } })).status).toBe('RUNNING');
+  });
+});

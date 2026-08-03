@@ -6,6 +6,11 @@ const { Worker } = require('bullmq');
 const { isQueueEnabled, getRedisConnection, closeRedis } = require('./config/redis');
 const { QUEUE_NAME, closeQueue } = require('./queues/videoGeneration.queue');
 const { runVideoGenerationJob } = require('./queues/videoGeneration.processor');
+const {
+  QUEUE_NAME: PROJECT_QUEUE_NAME,
+  closeQueue: closeProjectQueue,
+} = require('./queues/projectRun.queue');
+const { runProjectJob } = require('./queues/projectRun.processor');
 const providerSettings = require('./services/providerSettings.service');
 const { reconcileOnStartup } = require('./services/reconciliation.service');
 const prisma = require('./config/db');
@@ -84,7 +89,37 @@ worker.on('error', (err) => {
   logger.error(`Worker error: ${err.message}`);
 });
 
-logger.info(`Video worker started (concurrency ${CONCURRENCY}), watching queue "${QUEUE_NAME}"`);
+/**
+ * Magic Mode runs — the chat's path, and the one most requests take. Handled
+ * by the same process but its own worker, so a long campaign doesn't starve
+ * single-video jobs (and vice versa).
+ */
+const projectWorker = new Worker(
+  PROJECT_QUEUE_NAME,
+  async (job) => {
+    logger.info(`Running project ${job.data.projectId}`);
+    await runProjectJob(job.data);
+  },
+  { connection: getRedisConnection(), concurrency: CONCURRENCY }
+);
+
+projectWorker.on('completed', (job) => {
+  logger.info(`Project ${job.data.projectId} finished`);
+});
+
+projectWorker.on('failed', (job, err) => {
+  // The processor already closed the project out and refunded; this is just
+  // the log line.
+  logger.error(`Project ${job?.data?.projectId ?? 'unknown'} failed: ${err.message}`);
+});
+
+projectWorker.on('error', (err) => {
+  logger.error(`Project worker error: ${err.message}`);
+});
+
+logger.info(
+  `Worker started (concurrency ${CONCURRENCY}), watching queues "${QUEUE_NAME}" and "${PROJECT_QUEUE_NAME}"`
+);
 
 // Any generation left PROCESSING by a previous crash is closed out here.
 reconcileOnStartup();
@@ -93,8 +128,9 @@ async function shutdown(signal) {
   logger.info(`${signal} received, finishing in-flight jobs before exit...`);
   try {
     // close() waits for active jobs to finish rather than abandoning them.
-    await worker.close();
+    await Promise.all([worker.close(), projectWorker.close()]);
     await closeQueue();
+    await closeProjectQueue();
     await prisma.$disconnect();
     await closeRedis();
     logger.info('Worker shut down cleanly.');
@@ -108,4 +144,4 @@ async function shutdown(signal) {
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
-module.exports = worker;
+module.exports = { worker, projectWorker };

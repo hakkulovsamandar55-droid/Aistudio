@@ -124,15 +124,38 @@ const getEconomics = asyncHandler(async (req, res) => {
  * reconciling.
  */
 const getQueueStatus = asyncHandler(async (req, res) => {
-  const { getQueueStats } = require('../queues/videoGeneration.queue');
+  const videoQueue = require('../queues/videoGeneration.queue');
+  const projectQueue = require('../queues/projectRun.queue');
   const reconciliation = require('../services/reconciliation.service');
 
-  const [queue, stuck] = await Promise.all([
-    getQueueStats(),
+  const [video, project, stuck] = await Promise.all([
+    videoQueue.getQueueStats(),
+    projectQueue.getQueueStats(),
     reconciliation.countStuckGenerations(),
   ]);
 
-  res.json({ success: true, data: { ...queue, stuck } });
+  // Counts are summed for the headline figure, and kept per-queue so a
+  // backlog can be traced to the path causing it.
+  const enabled = video.enabled;
+  const counts = video.counts
+    ? Object.fromEntries(
+        Object.keys(video.counts).map((state) => [
+          state,
+          (video.counts[state] || 0) + (project.counts?.[state] || 0),
+        ])
+      )
+    : null;
+
+  res.json({
+    success: true,
+    data: {
+      enabled,
+      counts,
+      error: video.error || project.error,
+      queues: { videoGeneration: video.counts, projectRun: project.counts },
+      stuck,
+    },
+  });
 });
 
 const setPlan = asyncHandler(async (req, res) => {

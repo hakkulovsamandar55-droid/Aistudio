@@ -143,21 +143,33 @@ Two things go through it:
    Under the `local` driver this copy is skipped entirely — same disk, no
    durability gained.
 
-## Background jobs (video generation)
+## Background jobs
 
-Video renders take minutes, so they run as background jobs rather than inside
-the request. With `REDIS_URL` set, `POST /api/generate/video` enqueues a
-BullMQ job and a **separate worker process** does the work:
+Generation takes minutes, so it runs as background work rather than inside the
+request. With `REDIS_URL` set, a **separate worker process** does it:
 
 ```bash
 npm run worker        # production; npm run worker:dev to watch for changes
 ```
 
-The job id *is* the generation id, so a resubmission can't double-queue and
-reconciliation can ask the queue about a generation by primary key. Each job
-gets three attempts (initial + two retries) with exponential backoff; only
-when those are exhausted is the generation marked `FAILED` — and anything it
-was already charged is refunded (`failVideoGeneration`, safe to call twice).
+Two queues, both drained by that worker:
+
+| Queue | Fed by | Retries |
+|---|---|---|
+| `projectRun` | `POST /api/magic/run` — the chat, and the path most requests take | none |
+| `videoGeneration` | `POST /api/generate/video` | 3 attempts, exponential backoff |
+
+In both, the job id *is* the row's primary key (project id / generation id),
+so a resubmission can't double-queue and reconciliation can ask the queue
+"is this still live?" by id.
+
+**Why a video retries and a project run doesn't:** a single video is charged
+only once it succeeds, so replaying it costs the user nothing. A project run
+charges per asset *as each one succeeds*, so replaying it from the top would
+re-generate and re-charge for work already delivered. A failed run is
+therefore closed out rather than repeated — completed assets keep their
+results, and anything still in flight is failed and refunded
+(`failProject`/`failVideoGeneration`, both safe to call twice).
 
 **Leaving `REDIS_URL` empty is supported** — jobs then run in-process exactly
 as they did before the queue existed, which is fine for local dev and what the
@@ -166,11 +178,13 @@ which is precisely why production should set it. `QUEUE_DRIVER=inline` forces
 that fallback even when Redis is reachable.
 
 On boot, both the API and the worker run a **reconciliation pass**: any
-generation still `PROCESSING` after 15 minutes that the queue no longer holds
-a live job for is closed out as `FAILED` and refunded. Without that, a crash
-mid-render leaves a row the client polls forever. `GET /api/admin/queue`
-reports job counts per state plus the current stuck count, and the admin
-dashboard renders it.
+generation still `PROCESSING`, or project still `RUNNING`, after 15 minutes
+that the queue no longer holds a live job for is closed out and refunded.
+Without that, a crash mid-render leaves a row the client polls forever. The
+15-minute threshold is what stops a rolling deploy from killing a render that
+another instance is still working on. `GET /api/admin/queue` reports job
+counts per state (totalled, and split per queue) plus the current stuck
+count; the admin dashboard renders it.
 
 ## Stripe webhook idempotency
 
