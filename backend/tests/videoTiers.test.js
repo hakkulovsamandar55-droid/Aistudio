@@ -3,16 +3,27 @@ const videoTiers = require('../src/services/ai-gateway/videoTiers');
 const { gateway, videoGateway } = require('../src/services/ai-gateway');
 const AppError = require('../src/utils/AppError');
 
-/** Waits for the fire-and-forget video pipeline to settle. */
-async function waitForGeneration(generationId, attempts = 40) {
+/**
+ * Waits for the background video pipeline to settle. The budget is generous
+ * (well inside jest's 20s testTimeout) because this shares an event loop with
+ * the rest of the suite — a tight budget here shows up as a flake that has
+ * nothing to do with what the test is actually asserting. It returns as soon
+ * as the row settles, so a healthy run costs about a second.
+ */
+async function waitForGeneration(generationId, attempts = 100) {
+  let last = null;
+
   for (let i = 0; i < attempts; i += 1) {
     // eslint-disable-next-line no-await-in-loop
     await new Promise((resolve) => setTimeout(resolve, 150));
     // eslint-disable-next-line no-await-in-loop
-    const row = await prisma.generation.findUnique({ where: { id: generationId } });
-    if (row && (row.status === 'COMPLETED' || row.status === 'FAILED')) return row;
+    last = await prisma.generation.findUnique({ where: { id: generationId } });
+    if (last && (last.status === 'COMPLETED' || last.status === 'FAILED')) return last;
   }
-  throw new Error('generation did not settle in time');
+
+  throw new Error(
+    `generation ${generationId} did not settle in time (last status: ${last?.status ?? 'missing'})`
+  );
 }
 
 describe('video tier config', () => {

@@ -1,5 +1,7 @@
 require('dotenv').config();
 
+require('./config/sentry').init({ context: 'worker' });
+
 const { Worker } = require('bullmq');
 const { isQueueEnabled, getRedisConnection, closeRedis } = require('./config/redis');
 const { QUEUE_NAME, closeQueue } = require('./queues/videoGeneration.queue');

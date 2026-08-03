@@ -6,6 +6,7 @@ const morgan = require('morgan');
 
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const webhookRoutes = require('./routes/webhook.routes');
+const logger = require('./utils/logger');
 
 const app = express();
 
@@ -17,7 +18,14 @@ app.use(
   })
 );
 if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+  // Request logs go through the app logger rather than straight to stdout, so
+  // production emits one JSON stream instead of JSON interleaved with morgan's
+  // plain text.
+  app.use(
+    morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev', {
+      stream: { write: (line) => logger.info(line.trim()) },
+    })
+  );
 }
 
 // Stripe webhook needs the raw request body to verify the signature, so it

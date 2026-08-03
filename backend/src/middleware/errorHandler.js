@@ -1,4 +1,5 @@
 const logger = require('../utils/logger');
+const sentry = require('../config/sentry');
 
 /**
  * Single place where every error in the app is turned into a JSON response.
@@ -8,13 +9,21 @@ const logger = require('../utils/logger');
  */
 function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-vars
   const statusCode = err.isOperational && err.statusCode ? err.statusCode : 500;
-  const isProd = process.env.NODE_ENV === 'production';
 
   if (statusCode >= 500) {
-    logger.error(`${req.method} ${req.originalUrl} -> ${err.message}`, isProd ? undefined : err.stack);
+    logger.error(`${req.method} ${req.originalUrl} -> ${err.message}`, err);
+    // Only 5xx: a 400 or a 402 is the API working correctly and would just
+    // bury the real failures.
+    sentry.captureException(err, { req });
   } else {
-    logger.warn(`${req.method} ${req.originalUrl} -> ${err.message}`);
+    logger.warn(`${req.method} ${req.originalUrl} -> ${err.message}`, {
+      statusCode,
+      method: req.method,
+      url: req.originalUrl,
+    });
   }
+
+  const isProd = process.env.NODE_ENV === 'production';
 
   const message = statusCode >= 500 && isProd ? 'Internal server error' : err.message;
 

@@ -1,5 +1,8 @@
 require('dotenv').config();
 
+// Before anything else, so an error thrown during startup is still reported.
+require('./config/sentry').init({ context: 'api' });
+
 const app = require('./app');
 const providerSettings = require('./services/providerSettings.service');
 const { reconcileOnStartup } = require('./services/reconciliation.service');

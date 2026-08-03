@@ -119,9 +119,11 @@ describe('video generation', () => {
 
     const generationId = res.body.data.generationId;
 
-    // The mock video provider resolves after ~1s; poll until it settles.
+    // The mock video provider resolves after ~1s, but this shares an event
+    // loop with the rest of the suite, so the budget is generous. The loop
+    // exits the moment the row settles.
     let generation;
-    for (let attempt = 0; attempt < 30; attempt += 1) {
+    for (let attempt = 0; attempt < 75; attempt += 1) {
       // eslint-disable-next-line no-await-in-loop
       await new Promise((resolve) => setTimeout(resolve, 200));
       // eslint-disable-next-line no-await-in-loop
