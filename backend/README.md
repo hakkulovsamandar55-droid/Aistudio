@@ -154,6 +154,23 @@ mid-render leaves a row the client polls forever. `GET /api/admin/queue`
 reports job counts per state plus the current stuck count, and the admin
 dashboard renders it.
 
+## Stripe webhook idempotency
+
+Stripe delivers events **at least once** — a timeout, a 500, or just a slow
+response gets the same event sent again. Without a guard that means one
+payment granting credits twice.
+
+Every handled event id goes into `processed_webhook_events` (unique on
+`stripe_event_id`). For a purchase, that insert happens **in the same
+transaction as the credit grant**, so the two commit together or not at all.
+A redelivery then either finds the row and returns 200 without doing anything,
+or — if it races a delivery still in flight — loses the unique constraint and
+rolls back. Either way: one payment, one grant, one `PURCHASE` row.
+
+Events we don't act on are recorded too, so their redeliveries are answered
+from the table rather than re-walking the handler. A payload whose signature
+doesn't verify is rejected with a 400 and recorded as nothing.
+
 ## Stripe webhook (local testing)
 
 Use the Stripe CLI to forward events to your local server:

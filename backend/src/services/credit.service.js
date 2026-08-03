@@ -52,20 +52,30 @@ async function deductCredits(userId, amount, type, description) {
   });
 }
 
-async function addCredits(userId, amount, type, description, stripePaymentId = null) {
-  return prisma.$transaction(async (tx) => {
-    const updated = await tx.user.update({
-      where: { id: userId },
-      data: { credits: { increment: amount } },
-      select: { credits: true },
-    });
-
-    await tx.creditTransaction.create({
-      data: { userId, amount, type, description, stripePaymentId },
-    });
-
-    return updated.credits;
+/**
+ * The credit-granting half of addCredits, against a caller-supplied
+ * transaction client. Exists so a caller can make the grant atomic with
+ * something else — the Stripe webhook records the event id in the same
+ * transaction, which is what makes a redelivery unable to pay twice.
+ */
+async function addCreditsWithin(tx, userId, amount, type, description, stripePaymentId = null) {
+  const updated = await tx.user.update({
+    where: { id: userId },
+    data: { credits: { increment: amount } },
+    select: { credits: true },
   });
+
+  await tx.creditTransaction.create({
+    data: { userId, amount, type, description, stripePaymentId },
+  });
+
+  return updated.credits;
+}
+
+async function addCredits(userId, amount, type, description, stripePaymentId = null) {
+  return prisma.$transaction((tx) =>
+    addCreditsWithin(tx, userId, amount, type, description, stripePaymentId)
+  );
 }
 
 async function refundCredits(userId, amount, generationId) {
@@ -77,5 +87,6 @@ module.exports = {
   checkSufficientCredits,
   deductCredits,
   addCredits,
+  addCreditsWithin,
   refundCredits,
 };

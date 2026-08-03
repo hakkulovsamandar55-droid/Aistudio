@@ -20,6 +20,7 @@ const TABLES = [
   'generations',
   'projects',
   'provider_settings',
+  'processed_webhook_events',
   'announcements',
   'credit_packages',
   'users',

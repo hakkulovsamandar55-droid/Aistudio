@@ -193,6 +193,19 @@ model ProviderSetting {
   @@map("provider_settings")
 }
 
+/// Stripe redelivers events on any network hiccup or slow response, and it
+/// is explicitly at-least-once. Recording each handled event id — in the same
+/// transaction that grants the credits — is what stops a redelivery paying
+/// the user twice for one purchase.
+model ProcessedWebhookEvent {
+  id            String   @id @default(uuid())
+  stripeEventId String   @unique @map("stripe_event_id")
+  eventType     String   @map("event_type")
+  processedAt   DateTime @default(now()) @map("processed_at")
+
+  @@map("processed_webhook_events")
+}
+
 model Announcement {
   id        String   @id @default(uuid())
   message   String
