@@ -236,14 +236,36 @@ over the last 30 days, by module and by video quality tier — useful for
 checking the margin assumptions in `economics.config.js` against what
 generations are actually costing.
 
+## Transactional email
+
+`src/services/email.service.js` sends through [Resend](https://resend.com) —
+one `POST /emails`, so it goes through axios rather than another SDK. Swapping
+to Postmark means changing `deliver()` and nothing else.
+
+Three templates: password reset, welcome (on signup, email *and* Google), and
+a payment receipt (after a successful Stripe checkout).
+
+Two properties matter more than the templates:
+
+- **Email never breaks a request.** Every send is fire-and-forget; a failing
+  provider is logged and the signup/payment/reset completes regardless.
+- **Unconfigured is a valid state.** With no `EMAIL_PROVIDER_API_KEY` nothing
+  is sent and nothing hits the network, so dev and the test suite need no
+  credentials.
+
 ## Password reset
 
 Reset tokens are stored as SHA-256 hashes with a one-hour expiry and are
 single-use; changing a password also voids any outstanding links.
 `POST /auth/forgot-password` always returns 200 so email addresses can't be
-enumerated. **There is no mail transport wired up yet** — the raw token is
-logged server-side and, outside production only, returned as `devResetToken`
-so the flow is testable. Swap that for a real email send before launch.
+enumerated.
+
+The raw token is returned inline as `devResetToken` **only** when there is no
+mail provider configured *and* `NODE_ENV` isn't production — that keeps the
+flow testable locally without a key. The moment a key is set, the token is
+never in a response again; the only way to it is the user's inbox. (Returning
+it while mail is configured would let anyone reset anyone's password straight
+from that endpoint.)
 
 ## Google Sign-In
 

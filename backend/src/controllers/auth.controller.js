@@ -1,5 +1,6 @@
 const authService = require('../services/auth.service');
 const accountService = require('../services/account.service');
+const emailService = require('../services/email.service');
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
 
@@ -61,10 +62,15 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const { token } = await accountService.requestPasswordReset(email.trim().toLowerCase());
 
   // The response is intentionally identical whether or not the address exists.
-  // Outside production the token comes back inline so the flow is testable
-  // without an email provider wired up.
+  //
+  // The token only ever comes back inline when there is no mail provider to
+  // deliver it and we are not in production — otherwise anyone could reset
+  // anyone's password straight from this response. With a provider
+  // configured, the only way to the token is the user's inbox.
   const payload = { message: 'If that email is registered, a reset link has been sent.' };
-  if (token && process.env.NODE_ENV !== 'production') {
+  const canRevealToken =
+    process.env.NODE_ENV !== 'production' && !emailService.isConfigured();
+  if (token && canRevealToken) {
     payload.devResetToken = token;
   }
 

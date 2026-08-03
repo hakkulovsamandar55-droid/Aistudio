@@ -25,6 +25,13 @@ const VIDEO_SYSTEM_PROMPT =
   'ranglar. Faqat yakuniy promptni qaytar, boshqa hech narsa yozma.';
 
 async function enhanceWithSystemPrompt(userInput, systemPrompt) {
+  // With no key the call can only fail, and the SDK would spend its retry
+  // budget getting there — seconds of latency added to every generation for
+  // a result we already know. The fallback below is the same either way.
+  if (!process.env.OPENAI_API_KEY) {
+    return { originalPrompt: userInput, enhancedPrompt: userInput };
+  }
+
   try {
     const response = await getClient().chat.completions.create({
       model: MODEL,

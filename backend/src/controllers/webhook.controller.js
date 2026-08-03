@@ -1,5 +1,6 @@
 const paymentService = require('../services/payment.service');
 const creditService = require('../services/credit.service');
+const emailService = require('../services/email.service');
 const prisma = require('../config/db');
 const logger = require('../utils/logger');
 
@@ -40,6 +41,20 @@ const stripeWebhook = async (req, res) => {
             `Purchased ${creditPackage.name} package`,
             session.payment_intent
           );
+
+          // Receipt is fire-and-forget: the credits are already granted, and
+          // Stripe must get its 200 regardless of what the mail provider does.
+          const buyer = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { email: true, name: true },
+          });
+          if (buyer) {
+            emailService.sendPaymentReceiptEmail(buyer, {
+              packageName: creditPackage.name,
+              credits: creditPackage.credits,
+              amountUsd: creditPackage.priceUsd,
+            });
+          }
         } else {
           logger.error(`Stripe webhook: credit package ${packageId} not found`);
         }

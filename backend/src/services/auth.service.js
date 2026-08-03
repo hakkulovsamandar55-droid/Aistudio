@@ -5,6 +5,7 @@ const { OAuth2Client } = require('google-auth-library');
 const prisma = require('../config/db');
 const { BONUSES } = require('../config/credits.config');
 const accountService = require('./account.service');
+const emailService = require('./email.service');
 const AppError = require('../utils/AppError');
 
 const SALT_ROUNDS = 10;
@@ -121,6 +122,10 @@ async function registerUser(email, password, name, referralCode) {
     return created;
   });
 
+  // Fire-and-forget: a mail provider outage must not fail a signup that has
+  // already been committed.
+  emailService.sendWelcomeEmail(user, { credits: signupCredits });
+
   return {
     user: toPublicUser(user),
     accessToken: signAccessToken(user.id),
@@ -222,6 +227,8 @@ async function loginWithGoogle(idToken) {
 
         return created;
       });
+
+      emailService.sendWelcomeEmail(user, { credits: BONUSES.SIGNUP });
     }
   }
 

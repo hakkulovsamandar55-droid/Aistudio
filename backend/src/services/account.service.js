@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const prisma = require('../config/db');
 const { BONUSES, DAILY_BONUS_COOLDOWN_MS } = require('../config/credits.config');
 const creditService = require('./credit.service');
+const emailService = require('./email.service');
 const AppError = require('../utils/AppError');
 const logger = require('../utils/logger');
 
@@ -71,9 +72,10 @@ async function changePassword(userId, currentPassword, newPassword) {
  * Creates a single-use, time-limited reset token. Only the SHA-256 hash is
  * stored, so a leaked database dump can't be turned into working reset links.
  *
- * There is no mail transport wired up yet, so the raw token is logged
- * server-side (and returned in the response outside production) — swap this
- * for a real email send before going live.
+ * The raw token leaves this function twice: once by email (fire-and-forget,
+ * so a mail outage can't turn into a failed request or an enumeration signal
+ * from a slow response) and once as a return value, which the controller only
+ * exposes when there is no mail provider to deliver it.
  */
 async function requestPasswordReset(email) {
   const user = await prisma.user.findUnique({ where: { email } });
@@ -95,7 +97,9 @@ async function requestPasswordReset(email) {
     },
   });
 
-  logger.info(`Password reset requested for ${email}. Reset token: ${token}`);
+  emailService.sendPasswordResetEmail(user, token);
+
+  logger.info(`Password reset requested for ${email}`);
   return { token };
 }
 
