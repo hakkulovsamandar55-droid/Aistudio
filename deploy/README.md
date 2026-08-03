@@ -14,6 +14,42 @@ frontendni build qiladi va pm2 orqali API hamda worker'ni qayta ishga tushiradi.
 
 ---
 
+## Redis (fon joblar navbati) — hozircha yoqilmagan
+
+Deploy Redis'ni o'zi o'rnatishga urinadi, lekin deploy foydalanuvchisida
+parolsiz `sudo` yo'q, shuning uchun urinish muvaffaqiyatsiz tugadi va log'da
+shunday deydi:
+
+```
+Could not install Redis automatically — jobs will run in-process
+Queue: in-process (Redis not reachable)
+```
+
+Ilova ishlayapti — joblar API jarayonining o'zida bajarilmoqda, ya'ni deploy
+paytida yoki server qayta ishga tushganda tugallanmagan generatsiyalar
+yo'qoladi (aynan navbat hal qilishi kerak bo'lgan muammo).
+
+**Yoqish uchun VPS'da root sifatida bir marta:**
+
+```bash
+apt-get update && apt-get install -y redis-server
+systemctl enable --now redis-server
+redis-cli ping     # PONG bo'lishi kerak
+```
+
+Shundan keyingi birinchi deploy `.env` ga `REDIS_URL` ni o'zi qo'shadi va
+worker'ni (`pm2: aistudio-worker`) ishga tushiradi. Hech narsani qo'lda
+tahrirlash shart emas.
+
+Tekshirish: admin panel → Statistika → "Navbat holati" bo'limida
+"Redis ulangan" yozuvi paydo bo'ladi. `GET /health` ham
+`"redis":{"configured":true,"ok":true}` qaytaradi.
+
+Yangi serverda `setup-vps.sh` Redis'ni allaqachon o'rnatadi — bu qadam faqat
+shu skript ishga tushirilgandan keyin qo'shilgani uchun kerak.
+
+---
+
 ## Ma'lumotlar bazasi zaxirasi
 
 ### Nima uchun

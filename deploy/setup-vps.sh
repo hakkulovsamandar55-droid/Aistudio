@@ -38,8 +38,11 @@ if ! command -v node >/dev/null || [ "$(node -v | cut -d. -f1 | tr -d v)" -lt 20
   apt-get install -y nodejs
 fi
 
-echo "==> PostgreSQL, nginx, git va boshqa kerakli paketlar o'rnatilmoqda..."
-apt-get install -y postgresql postgresql-contrib nginx git build-essential openssl
+echo "==> PostgreSQL, Redis, nginx, git va boshqa kerakli paketlar o'rnatilmoqda..."
+# redis-server — fon joblar navbati uchun. Usiz ilova ishlaydi, lekin server
+# qayta ishga tushganda tugallanmagan generatsiyalar yo'qoladi.
+apt-get install -y postgresql postgresql-contrib redis-server nginx git build-essential openssl
+systemctl enable --now redis-server || true
 
 echo "==> pm2 (process manager) o'rnatilmoqda..."
 npm install -g pm2
@@ -75,6 +78,10 @@ NODE_ENV=production
 FRONTEND_URL=http://${SERVER_IP}
 
 DATABASE_URL="postgresql://aistudio:${DB_PASSWORD}@localhost:5432/ai_studio?schema=public"
+
+# Fon joblar navbati. Deploy shu qator borligini ko'rsa, worker jarayonini
+# ham (pm2: aistudio-worker) ishga tushiradi.
+REDIS_URL=redis://127.0.0.1:6379
 
 JWT_SECRET=${JWT_SECRET}
 JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
