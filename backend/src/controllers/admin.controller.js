@@ -118,6 +118,23 @@ const getEconomics = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
+/**
+ * Queue health at a glance: how much work is waiting, how much is running,
+ * and whether anything has been abandoned in PROCESSING long enough to need
+ * reconciling.
+ */
+const getQueueStatus = asyncHandler(async (req, res) => {
+  const { getQueueStats } = require('../queues/videoGeneration.queue');
+  const reconciliation = require('../services/reconciliation.service');
+
+  const [queue, stuck] = await Promise.all([
+    getQueueStats(),
+    reconciliation.countStuckGenerations(),
+  ]);
+
+  res.json({ success: true, data: { ...queue, stuck } });
+});
+
 const setPlan = asyncHandler(async (req, res) => {
   const { plan, expiresAt } = req.body;
   const updated = await planService.setPlan(
@@ -139,6 +156,7 @@ module.exports = {
   getProviders,
   updateProvider,
   getEconomics,
+  getQueueStatus,
   getGenerations,
   getPackages,
   createPackage,

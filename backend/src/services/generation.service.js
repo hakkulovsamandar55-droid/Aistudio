@@ -6,6 +6,7 @@ const { resolveTier } = require('./ai-gateway/videoTiers');
 const creditService = require('./credit.service');
 const promptEnhancer = require('./promptEnhancer.service');
 const { imageGateway, videoGateway } = require('./ai-gateway');
+const { enqueueVideoGeneration } = require('../queues/videoGeneration.queue');
 const logger = require('../utils/logger');
 const AppError = require('../utils/AppError');
 
@@ -142,53 +143,80 @@ async function createVideoGeneration(userId, userPrompt, options = {}) {
   });
 
   // Video generation can take minutes, so we return immediately with the
-  // generation id and let the caller poll GET /api/generate/:id/status.
-  // This "fire and forget" pattern is a placeholder for a real job queue
-  // (Bull/BullMQ + Redis) — the function signatures already match what that
-  // migration would need: a self-contained async unit of work keyed by
-  // generation.id, with no return value the caller depends on.
-  processVideoGeneration(generation.id, userId, userPrompt, requiredCredits, {
-    ...options,
-    quality: tier.id,
-  }).catch((err) => {
-    logger.error(`Unhandled error processing video generation ${generation.id}`, err);
+  // generation id and let the caller poll GET /api/generate/:id/status. The
+  // work itself goes to a durable queue keyed by generation.id, so a restart
+  // mid-render resumes instead of stranding the row in PROCESSING forever.
+  await enqueueVideoGeneration({
+    generationId: generation.id,
+    userId,
+    userPrompt,
+    requiredCredits,
+    options: { ...options, quality: tier.id },
   });
 
   return generation;
 }
 
-async function processVideoGeneration(generationId, userId, userPrompt, requiredCredits, options) {
-  try {
-    const { enhancedPrompt } = await promptEnhancer.enhanceVideoPrompt(userPrompt);
-    const styledPrompt = applyStyle(enhancedPrompt, 'VIDEO', options.style);
+/**
+ * One video render, start to finish. Takes a single serialisable payload
+ * because that is exactly what gets stored as the queue job, and throws on
+ * failure rather than swallowing — the caller decides whether a failure is
+ * retryable or final.
+ */
+async function processVideoGeneration({ generationId, userId, userPrompt, requiredCredits, options }) {
+  const { enhancedPrompt } = await promptEnhancer.enhanceVideoPrompt(userPrompt);
+  const styledPrompt = applyStyle(enhancedPrompt, 'VIDEO', options.style);
 
-    await prisma.generation.update({
-      where: { id: generationId },
-      data: { enhancedPrompt: styledPrompt },
-    });
+  await prisma.generation.update({
+    where: { id: generationId },
+    data: { enhancedPrompt: styledPrompt, status: 'PROCESSING', errorMessage: null },
+  });
 
-    const { url, provider } = await videoGateway.generateVideo(styledPrompt, options);
+  const { url, provider } = await videoGateway.generateVideo(styledPrompt, options);
 
-    await prisma.generation.update({
-      where: { id: generationId },
-      data: { status: 'COMPLETED', resultUrl: url, provider, creditsUsed: requiredCredits },
-    });
+  await prisma.generation.update({
+    where: { id: generationId },
+    data: { status: 'COMPLETED', resultUrl: url, provider, creditsUsed: requiredCredits },
+  });
 
-    // Same rule as images: video is expensive, so credits are only deducted
-    // once the generation has actually succeeded.
-    await creditService.deductCredits(
-      userId,
-      requiredCredits,
-      'GENERATION_VIDEO',
-      `Video generation: "${userPrompt.slice(0, 60)}"`
-    );
-  } catch (err) {
-    logger.error(`Video generation ${generationId} failed`, err.message);
-    await prisma.generation.update({
-      where: { id: generationId },
-      data: { status: 'FAILED', errorMessage: err.message },
-    });
+  // Same rule as images: video is expensive, so credits are only deducted
+  // once the generation has actually succeeded.
+  await creditService.deductCredits(
+    userId,
+    requiredCredits,
+    'GENERATION_VIDEO',
+    `Video generation: "${userPrompt.slice(0, 60)}"`
+  );
+}
+
+/**
+ * Marks a generation permanently failed and hands back anything it was
+ * charged. Credits are normally taken only after a success, so `creditsUsed`
+ * is usually 0 and the refund is a no-op — but a crash between the charge and
+ * the status write would otherwise leave the user paying for nothing.
+ *
+ * Safe to call twice: a generation that is already finished is left alone, so
+ * a retry storm or an overlapping reconciliation pass cannot double-refund.
+ */
+async function failVideoGeneration(generationId, errorMessage) {
+  const generation = await prisma.generation.findUnique({ where: { id: generationId } });
+
+  if (!generation || (generation.status !== 'PROCESSING' && generation.status !== 'PENDING')) {
+    return null;
   }
+
+  const updated = await prisma.generation.update({
+    where: { id: generationId },
+    data: { status: 'FAILED', errorMessage: errorMessage || 'Generation failed', creditsUsed: 0 },
+  });
+
+  if (generation.creditsUsed > 0) {
+    await creditService.refundCredits(generation.userId, generation.creditsUsed, generationId);
+    logger.info(`Refunded ${generation.creditsUsed} credits for failed generation ${generationId}`);
+  }
+
+  logger.error(`Video generation ${generationId} failed: ${errorMessage}`);
+  return updated;
 }
 
 async function getGenerationStatus(generationId, userId) {
@@ -281,6 +309,8 @@ module.exports = {
   createImageGeneration,
   createRemixGeneration,
   createVideoGeneration,
+  processVideoGeneration,
+  failVideoGeneration,
   getGenerationStatus,
   getOwnedGeneration,
   setFavorite,

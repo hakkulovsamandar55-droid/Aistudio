@@ -27,3 +27,6 @@ backend/prisma/dev.db
 
 # User uploads (Remix source images) — transient, deleted after processing
 backend/uploads/
+
+# Redis snapshot, if a local redis-server is ever started from a repo directory
+dump.rdb

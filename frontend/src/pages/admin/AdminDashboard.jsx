@@ -50,8 +50,73 @@ function TrendChart({ title, series, color }) {
   );
 }
 
+const QUEUE_STATE_LABELS = {
+  waiting: 'Navbatda',
+  active: 'Ishlamoqda',
+  delayed: 'Kutilmoqda',
+  completed: 'Bajarildi',
+  failed: 'Xato',
+  paused: "To'xtatilgan",
+};
+
+/**
+ * Background-job health. Without Redis the API still runs jobs in-process,
+ * which works but loses anything in flight on restart — so that state is
+ * called out rather than shown as an empty queue.
+ */
+function QueuePanel({ queue }) {
+  if (!queue) return null;
+
+  return (
+    <div className="mt-8 rounded-xl border border-[#e8e0d3] bg-white p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="font-semibold text-[#1c1a17]">Navbat holati</h2>
+        <span
+          className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+            queue.enabled
+              ? 'bg-[#e8f3ec] text-[#2f6b46]'
+              : 'bg-[#fdf3e3] text-[#95601a]'
+          }`}
+        >
+          {queue.enabled ? 'Redis ulangan' : 'Redis yo’q — jarayon ichida'}
+        </span>
+      </div>
+
+      {!queue.enabled && (
+        <p className="text-sm text-[#6d655a]">
+          REDIS_URL sozlanmagan. Joblar API jarayonining o&apos;zida bajarilmoqda — server
+          qayta ishga tushsa, tugallanmagan generatsiyalar yo&apos;qoladi.
+        </p>
+      )}
+
+      {queue.enabled && queue.error && (
+        <p className="text-sm text-[#a8352a]">Navbatga ulanib bo&apos;lmadi: {queue.error}</p>
+      )}
+
+      {queue.counts && (
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+          {Object.entries(QUEUE_STATE_LABELS).map(([key, label]) => (
+            <div key={key} className="rounded-lg bg-[#faf7f1] p-3 text-center">
+              <p className="text-lg font-bold text-[#1c1a17]">{queue.counts[key] ?? 0}</p>
+              <p className="mt-0.5 text-[11px] text-[#6d655a]">{label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {queue.stuck > 0 && (
+        <p className="mt-3 rounded-lg bg-[#fbeceb] px-3 py-2 text-sm text-[#a8352a]">
+          {queue.stuck} ta generatsiya uzoq vaqtdan beri PROCESSING holatida qolgan — keyingi
+          server ishga tushishida ular bekor qilinib, kredit qaytariladi.
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
+  const [queue, setQueue] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -61,6 +126,13 @@ export default function AdminDashboard() {
       .then((res) => setStats(res.data.data))
       .catch(() => setError("Statistikani yuklab bo'lmadi."))
       .finally(() => setLoading(false));
+
+    // Queue status is a separate, non-critical call — a Redis hiccup should
+    // not blank out the rest of the dashboard.
+    adminApi
+      .getQueue()
+      .then((res) => setQueue(res.data.data))
+      .catch(() => setQueue(null));
   }, []);
 
   return (
@@ -94,6 +166,8 @@ export default function AdminDashboard() {
               hint="foydalanuvchilar balansi"
             />
           </div>
+
+          <QueuePanel queue={queue} />
 
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
             <TrendChart

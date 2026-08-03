@@ -20,4 +20,5 @@ export const adminApi = {
   getProviders: () => api.get('/admin/providers'),
   updateProvider: (provider, data) => api.patch(`/admin/providers/${provider}`, data),
   getEconomics: () => api.get('/admin/economics'),
+  getQueue: () => api.get('/admin/queue'),
 };

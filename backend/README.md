@@ -96,6 +96,35 @@ wan/kling/runway/veo in `src/services/ai-gateway/videoTiers.js`) rather than a
 single `VIDEO_PROVIDER` pin — see that file for the fallback-to-cheaper-tier
 behavior when a tier's provider has no credentials.
 
+## Background jobs (video generation)
+
+Video renders take minutes, so they run as background jobs rather than inside
+the request. With `REDIS_URL` set, `POST /api/generate/video` enqueues a
+BullMQ job and a **separate worker process** does the work:
+
+```bash
+npm run worker        # production; npm run worker:dev to watch for changes
+```
+
+The job id *is* the generation id, so a resubmission can't double-queue and
+reconciliation can ask the queue about a generation by primary key. Each job
+gets three attempts (initial + two retries) with exponential backoff; only
+when those are exhausted is the generation marked `FAILED` — and anything it
+was already charged is refunded (`failVideoGeneration`, safe to call twice).
+
+**Leaving `REDIS_URL` empty is supported** — jobs then run in-process exactly
+as they did before the queue existed, which is fine for local dev and what the
+test suite uses. The tradeoff is that a restart loses whatever was rendering,
+which is precisely why production should set it. `QUEUE_DRIVER=inline` forces
+that fallback even when Redis is reachable.
+
+On boot, both the API and the worker run a **reconciliation pass**: any
+generation still `PROCESSING` after 15 minutes that the queue no longer holds
+a live job for is closed out as `FAILED` and refunded. Without that, a crash
+mid-render leaves a row the client polls forever. `GET /api/admin/queue`
+reports job counts per state plus the current stuck count, and the admin
+dashboard renders it.
+
 ## Stripe webhook (local testing)
 
 Use the Stripe CLI to forward events to your local server:

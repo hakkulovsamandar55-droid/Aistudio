@@ -46,11 +46,25 @@ jobs:
             npm ci
             npm run build
 
+            cd /var/www/aistudio/backend
+
             if pm2 describe aistudio-backend > /dev/null 2>&1; then
               pm2 reload aistudio-backend
             else
-              cd /var/www/aistudio/backend
               pm2 start src/server.js --name aistudio-backend
             fi
+
+            # The worker only makes sense with Redis configured; without it the
+            # API runs jobs in-process and a worker would just exit(1) on boot.
+            if grep -qE "^REDIS_URL=.+" .env; then
+              if pm2 describe aistudio-worker > /dev/null 2>&1; then
+                pm2 reload aistudio-worker
+              else
+                pm2 start src/worker.js --name aistudio-worker
+              fi
+            else
+              echo "REDIS_URL not set in .env — skipping worker (jobs run in-process)"
+            fi
+
             pm2 save
           '

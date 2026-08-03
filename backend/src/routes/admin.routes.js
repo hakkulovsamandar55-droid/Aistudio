@@ -22,6 +22,8 @@ router.patch('/providers/:provider', adminController.updateProvider);
 
 router.get('/economics', adminController.getEconomics);
 
+router.get('/queue', adminController.getQueueStatus);
+
 router.get('/generations', adminController.getGenerations);
 
 router.get('/packages', adminController.getPackages);
