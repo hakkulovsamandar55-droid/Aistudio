@@ -36,7 +36,29 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_ed25519 "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" '
             set -e
+
+            # Redis backs the job queue. Installed once, and best-effort: if it
+            # cannot be installed (no passwordless sudo, say) the app still runs
+            # with the in-process fallback rather than the deploy failing.
+            if ! command -v redis-server > /dev/null 2>&1; then
+              echo "Installing Redis..."
+              sudo -n apt-get update -y > /dev/null 2>&1 \
+                && sudo -n apt-get install -y redis-server > /dev/null 2>&1 \
+                && sudo -n systemctl enable --now redis-server > /dev/null 2>&1 \
+                || echo "Could not install Redis automatically — jobs will run in-process"
+            fi
+
             cd /var/www/aistudio/backend
+
+            # Only switch the queue on once Redis actually answers, so a broken
+            # install cannot leave jobs enqueued with nothing draining them.
+            if redis-cli ping 2>/dev/null | grep -q PONG; then
+              grep -q "^REDIS_URL=." .env || echo "REDIS_URL=redis://127.0.0.1:6379" >> .env
+              echo "Queue: Redis"
+            else
+              echo "Queue: in-process (Redis not reachable)"
+            fi
+
             npm ci
             npx prisma generate
             npx prisma migrate deploy
