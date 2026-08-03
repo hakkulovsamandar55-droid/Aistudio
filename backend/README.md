@@ -212,6 +212,24 @@ network) and truncates every table between tests, so `DATABASE_URL` in
 `.env.test` **must** contain "test" — `tests/setup.js` refuses to run
 otherwise. Rate limiters stand down under `NODE_ENV=test`.
 
+No external services are needed: with `REDIS_URL` unset the queue runs jobs
+in-process, `STORAGE_DRIVER` defaults to local disk, and the email service
+sends nothing without an API key — each exercising the same code path
+production uses, just with the fallback driver.
+
+Worth knowing about a few of the suites:
+
+- `queue.test.js` — the refund contract. A job that exhausts its retries
+  marks the generation `FAILED` and hands back anything it was charged;
+  calling that twice can't refund twice; an intermediate attempt leaves the
+  row `PROCESSING` rather than showing a failure that's about to un-fail.
+- `webhookIdempotency.test.js` — one Stripe event delivered five times in
+  parallel still grants credits exactly once.
+- `email.test.js` — asserts what would go over the wire (mocked axios), and
+  that a dead mail provider can't fail a registration.
+- `health.test.js` — the deep check returns 503 when Postgres is unreachable
+  and 200 when optional dependencies are merely unconfigured.
+
 ## API overview
 
 | Area | Endpoints |
